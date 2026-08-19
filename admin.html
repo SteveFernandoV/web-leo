@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-  <title>Panel de Control del Dueño // Happy Tactical Command Center</title>
-  <meta name="description" content="Centro de Mando y Editor Operativo del Propietario para Happy Tactical. Gestión de contenidos, cursos, calendario, multimedia y sistema.">
+  <title>Centro de Mando del Propietario // Happy Tactical Admin</title>
+  <meta name="description" content="Panel de administración y editor operativo para Happy Tactical.">
   <meta name="robots" content="noindex, nofollow">
 
-  <!-- Google Fonts: Orbitron & Rajdhani & Inter -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -15,12 +15,12 @@
   <style>
     :root {
       --bg-void: #03060c;
-      --bg-panel: #080d16;
-      --bg-card: rgba(13, 20, 32, 0.85);
-      --bg-card-hover: rgba(18, 28, 45, 0.95);
-      --bg-input: rgba(6, 10, 16, 0.9);
-      --border-card: rgba(0, 229, 255, 0.18);
-      --border-cyan: rgba(0, 229, 255, 0.4);
+      --bg-panel: #070c16;
+      --bg-card: rgba(12, 19, 30, 0.88);
+      --bg-card-hover: rgba(18, 28, 45, 0.98);
+      --bg-input: rgba(5, 9, 15, 0.95);
+      --border-card: rgba(0, 229, 255, 0.16);
+      --border-cyan: rgba(0, 229, 255, 0.45);
       --neon-cyan: #00e5ff;
       --neon-pink: #ff007f;
       --neon-amber: #ffb300;
@@ -57,20 +57,120 @@
       position: fixed;
       inset: 0;
       background-image: 
-        linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+        linear-gradient(rgba(0, 229, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 229, 255, 0.025) 1px, transparent 1px);
       background-size: 32px 32px;
       pointer-events: none;
       z-index: 0;
     }
 
     /* ========================================================================
-       AUTH PIN LOCK SCREEN
+       PRELOADER SCREEN (CUADRO DE CARGA)
+       ======================================================================== */
+    .tactical-preloader {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 45%, #08101d 0%, #03060c 100%);
+      z-index: 99999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    .tactical-preloader.loaded {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .preloader-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 30px;
+      max-width: 420px;
+      width: 90%;
+    }
+    .preloader-radar {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0, 229, 255, 0.3);
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.25);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .radar-sweep {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 70%, rgba(0, 229, 255, 0.5) 100%);
+      animation: radarSpin 1.4s linear infinite;
+    }
+    @keyframes radarSpin {
+      100% { transform: rotate(360deg); }
+    }
+    .radar-dot {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--neon-pink);
+      box-shadow: 0 0 10px var(--neon-pink);
+    }
+    .preloader-title {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+    .preloader-title span {
+      color: var(--neon-cyan);
+    }
+    .preloader-telemetry {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      letter-spacing: 1.2px;
+      margin-bottom: 14px;
+    }
+    .preloader-bar-wrap {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 229, 255, 0.25);
+    }
+    .preloader-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+      box-shadow: 0 0 10px var(--neon-cyan);
+      transition: width 0.15s ease;
+    }
+    .preloader-percent {
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 8px;
+    }
+
+    /* ========================================================================
+       AUTH LOGIN CARD (USUARIO REGISTRADO + PIN)
        ======================================================================== */
     .auth-overlay {
       position: fixed;
       inset: 0;
-      background: radial-gradient(circle at 50% 40%, rgba(13, 22, 36, 0.95) 0%, rgba(3, 6, 12, 0.99) 100%);
+      background: radial-gradient(circle at 50% 40%, rgba(13, 22, 36, 0.96) 0%, rgba(3, 6, 12, 0.99) 100%);
       backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
       z-index: 100000;
@@ -93,7 +193,6 @@
       max-width: 440px;
       width: 100%;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 229, 255, 0.15);
-      text-align: center;
       position: relative;
     }
     .auth-badge {
@@ -116,46 +215,25 @@
       font-size: 22px;
       font-weight: 800;
       color: #fff;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .auth-desc {
       font-size: 13px;
       color: var(--text-dim);
       margin-bottom: 24px;
     }
-    .pin-input-wrap {
-      margin-bottom: 20px;
-    }
-    .pin-input {
-      width: 100%;
-      background: var(--bg-input);
-      border: 1.5px solid rgba(0, 229, 255, 0.35);
-      border-radius: var(--radius-md);
-      color: #fff;
-      font-family: var(--font-display);
-      font-size: 28px;
-      font-weight: 800;
-      text-align: center;
-      letter-spacing: 12px;
-      padding: 14px;
-      outline: none;
-      transition: all 0.25s ease;
-    }
-    .pin-input:focus {
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
-    }
     .auth-error {
       color: var(--neon-pink);
       font-family: var(--font-display);
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       margin-top: 10px;
       display: none;
+      text-align: center;
     }
 
     /* ========================================================================
-       MAIN APP SHELL (TOP HUD & SIDEBAR + CONTENT)
+       TOP HEADER & USER STATUS
        ======================================================================== */
     .app-shell {
       display: flex;
@@ -164,14 +242,12 @@
       position: relative;
       z-index: 1;
     }
-
-    /* Top HUD Header */
     .top-header {
       background: rgba(6, 10, 16, 0.95);
       border-bottom: 1px solid var(--border-card);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      padding: 12px 24px;
+      padding: 12px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -182,7 +258,7 @@
     .brand-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
     }
     .brand-logo-txt {
       font-family: var(--font-display);
@@ -194,19 +270,32 @@
     .brand-logo-txt span {
       color: var(--neon-cyan);
     }
-    .status-pill {
+    .user-profile-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      padding: 4px 12px;
+      border-radius: var(--radius-sm);
+    }
+    .user-avatar-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #03060c;
+    }
+    .user-name-txt {
       font-family: var(--font-display);
-      font-size: 10.5px;
+      font-size: 11.5px;
       font-weight: 700;
-      color: var(--neon-green);
-      background: rgba(0, 230, 118, 0.08);
-      border: 1px solid rgba(0, 230, 118, 0.3);
-      padding: 3px 10px;
-      border-radius: 4px;
-      letter-spacing: 0.8px;
+      color: #fff;
     }
     .pulse-dot {
       width: 7px;
@@ -220,11 +309,6 @@
       0%, 100% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.35); opacity: 0.6; }
     }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
 
     /* Buttons */
     .btn {
@@ -237,7 +321,7 @@
       font-weight: 700;
       letter-spacing: 0.8px;
       text-transform: uppercase;
-      padding: 8px 16px;
+      padding: 9px 18px;
       border-radius: var(--radius-sm);
       cursor: pointer;
       text-decoration: none;
@@ -251,7 +335,7 @@
       box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);
     }
     .btn-primary:hover {
-      box-shadow: 0 6px 20px rgba(0, 229, 255, 0.6);
+      box-shadow: 0 6px 22px rgba(0, 229, 255, 0.6);
       transform: translateY(-1px);
     }
     .btn-secondary {
@@ -273,24 +357,15 @@
       background: rgba(255, 59, 48, 0.3);
       color: #fff;
     }
-    .btn-success {
-      background: rgba(0, 230, 118, 0.15);
-      border: 1px solid rgba(0, 230, 118, 0.4);
-      color: var(--neon-green);
-    }
-    .btn-success:hover {
-      background: rgba(0, 230, 118, 0.3);
-      color: #fff;
-    }
     .btn-sm {
       padding: 6px 12px;
       font-size: 11px;
     }
 
-    /* Main Grid Layout */
+    /* Layout Grid */
     .app-body {
       display: grid;
-      grid-template-columns: 280px 1fr;
+      grid-template-columns: 290px 1fr;
       flex: 1;
     }
 
@@ -298,13 +373,13 @@
     .sidebar {
       background: rgba(8, 13, 22, 0.95);
       border-right: 1px solid var(--border-card);
-      padding: 20px 14px;
+      padding: 22px 14px;
       display: flex;
       flex-direction: column;
       gap: 6px;
       position: sticky;
-      top: 60px;
-      height: calc(100vh - 60px);
+      top: 62px;
+      height: calc(100vh - 62px);
       overflow-y: auto;
     }
     .nav-category-title {
@@ -314,7 +389,7 @@
       color: var(--text-dim);
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      padding: 10px 12px 4px 12px;
+      padding: 12px 12px 4px 12px;
     }
     .sidebar-btn {
       display: flex;
@@ -343,18 +418,18 @@
       background: rgba(0, 229, 255, 0.12);
       border-color: var(--neon-cyan);
       color: #fff;
-      box-shadow: 0 4px 15px rgba(0, 229, 255, 0.15), inset 0 0 10px rgba(0, 229, 255, 0.05);
+      box-shadow: 0 4px 15px rgba(0, 229, 255, 0.18);
     }
     .sidebar-icon {
       font-size: 16px;
-      width: 20px;
+      width: 22px;
       text-align: center;
     }
 
     /* Content Area */
     .content-area {
-      padding: 30px;
-      max-width: 1100px;
+      padding: 32px;
+      max-width: 1120px;
       width: 100%;
       margin: 0 auto;
     }
@@ -370,7 +445,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Section Headers */
+    /* Header */
     .module-header {
       margin-bottom: 24px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -399,22 +474,37 @@
       margin-top: 4px;
     }
 
-    /* Card Panels & Forms */
-    .card-panel {
+    /* ========================================================================
+       CUADROS INTERACTIVOS TÁCTICOS (INTERACTIVE BENTO CARDS)
+       ======================================================================== */
+    .interactive-card {
       background: var(--bg-card);
       border: 1px solid var(--border-card);
       border-radius: var(--radius-lg);
       padding: 24px;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      position: relative;
     }
-    .card-panel-title {
+    .interactive-card:hover {
+      border-color: var(--border-cyan);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 229, 255, 0.08);
+    }
+    .card-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 12px;
+    }
+    .card-badge-title {
       font-family: var(--font-display);
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 13.5px;
+      font-weight: 800;
       color: var(--neon-cyan);
-      letter-spacing: 0.8px;
-      margin-bottom: 16px;
+      letter-spacing: 1px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -453,71 +543,75 @@
       color: #fff;
       font-family: var(--font-sans);
       font-size: 13.5px;
-      padding: 10px 14px;
+      padding: 11px 14px;
       outline: none;
       transition: all 0.2s ease;
     }
     .form-input:focus, .form-textarea:focus, .form-select:focus {
       border-color: var(--neon-cyan);
-      box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
     }
     .form-textarea {
       resize: vertical;
       min-height: 80px;
     }
 
-    /* Live Stat Boxes */
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
+    /* Live WhatsApp Interactive Simulator */
+    .whatsapp-preview-box {
+      background: #0b141a;
+      border: 1px solid rgba(37, 211, 102, 0.3);
       border-radius: var(--radius-md);
-      padding: 18px 20px;
+      padding: 16px;
+      margin-top: 14px;
       display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      align-items: flex-start;
+      gap: 12px;
     }
-    .stat-icon-wrap {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      background: rgba(0, 229, 255, 0.1);
-      border: 1px solid rgba(0, 229, 255, 0.3);
+    .wa-bubble {
+      background: #005c4b;
+      color: #e9edef;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      max-width: 90%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      line-height: 1.45;
+    }
+    .wa-bubble-time {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    /* Live Video Preview Box */
+    .video-preview-thumb-box {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
-      color: var(--neon-cyan);
+      margin-top: 10px;
     }
-    .stat-val {
-      font-family: var(--font-display);
-      font-size: 22px;
-      font-weight: 800;
-      color: #fff;
-      line-height: 1.1;
-    }
-    .stat-lbl {
-      font-size: 11.5px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      font-weight: 600;
-      letter-spacing: 0.5px;
+    .video-preview-thumb-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
-    /* Dynamic Item Rows (Calendar / Videos / Photos) */
+    /* Item Rows */
     .item-list {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
     .item-row {
-      background: rgba(8, 13, 20, 0.9);
+      background: rgba(6, 10, 16, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: var(--radius-md);
       padding: 16px 20px;
@@ -525,31 +619,11 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
     }
     .item-row:hover {
       border-color: var(--border-cyan);
-      background: rgba(12, 19, 30, 0.95);
-    }
-    .item-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-    }
-    .item-title {
-      font-family: var(--font-display);
-      font-size: 14px;
-      font-weight: 700;
-      color: #fff;
-    }
-    .item-sub {
-      font-size: 12px;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      background: rgba(10, 16, 26, 0.98);
     }
     .badge-tag {
       font-family: var(--font-display);
@@ -566,11 +640,11 @@
     .save-bar-fixed {
       position: sticky;
       bottom: 0;
-      background: rgba(6, 10, 16, 0.95);
+      background: rgba(6, 10, 16, 0.96);
       border-top: 1px solid var(--border-cyan);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      padding: 14px 28px;
+      padding: 14px 32px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -578,7 +652,7 @@
       box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.7);
     }
 
-    /* Toast Notification */
+    /* Toast */
     .toast {
       position: fixed;
       bottom: 80px;
@@ -635,43 +709,70 @@
 <body>
 
   <!-- ========================================================================
-       1. PANTALLA DE SEGURIDAD / PIN DE ACCESO
+       1. CUADRO DE CARGA TÁCTICO (PRELOADER)
+       ======================================================================== -->
+  <div id="adminPreloader" class="tactical-preloader" aria-label="Cargando panel de control">
+    <div class="preloader-content">
+      <div class="preloader-radar">
+        <div class="radar-sweep"></div>
+        <div class="radar-dot"></div>
+      </div>
+      <div class="preloader-title">HAPPY <span>TACTICAL</span></div>
+      <div class="preloader-telemetry" id="adminPreloaderTxt">INICIALIZANDO CENTRO DE MANDO...</div>
+      <div class="preloader-bar-wrap">
+        <div class="preloader-bar" id="adminPreloaderBar"></div>
+      </div>
+      <div class="preloader-percent" id="adminPreloaderPct">0%</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       2. CUADRO DE SEGURIDAD / LOGIN DE USUARIO REGISTRADO
        ======================================================================== -->
   <div class="auth-overlay" id="authOverlay">
     <div class="auth-card">
       <div class="auth-badge">
-        <span>🛡️</span> SEGURIDAD TÁCTICA NIVEL 1
+        <span>🛡️</span> SEGURIDAD TÁCTICA // ACCESO PROPIETARIO
       </div>
       <h1 class="auth-title">CENTRO DE MANDO</h1>
-      <p class="auth-desc">Introduce tu PIN de 4 dígitos para acceder al panel de administración del propietario.</p>
+      <p class="auth-desc">Ingresa tu usuario registrado y contraseña/PIN para gestionar la plataforma.</p>
 
       <form onsubmit="handleAuthSubmit(event)">
-        <div class="pin-input-wrap">
-          <input type="password" id="ownerPinInput" class="pin-input" maxlength="4" placeholder="••••" autofocus required>
+        <div class="form-group" style="margin-bottom: 16px; text-align: left;">
+          <label class="form-label" for="loginUser">Usuario Operador</label>
+          <input type="text" id="loginUser" class="form-input" placeholder="admin" value="admin" required>
         </div>
+
+        <div class="form-group" style="margin-bottom: 20px; text-align: left;">
+          <label class="form-label" for="loginPin">PIN Maestro / Contraseña</label>
+          <input type="password" id="loginPin" class="form-input" placeholder="••••" maxlength="4" style="font-size: 20px; letter-spacing: 6px; text-align: center;" autofocus required>
+        </div>
+
         <div class="auth-error" id="authErrorMsg">
-          ⚠ PIN INCORRECTO. INTENTA NUEVAMENTE.
+          ⚠ CREDENCIALES INCORRECTAS. REINTENTA.
         </div>
+
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <a href="index.html" class="btn btn-secondary" style="flex: 1;">VOLVER AL SITIO 🌐</a>
-          <button type="submit" class="btn btn-primary" style="flex: 1;">INGRESAR 🔓</button>
+          <a href="index.html" class="btn btn-secondary" style="flex: 1;">VOLVER A LA WEB 🌐</a>
+          <button type="submit" class="btn btn-primary" style="flex: 1;">ACCEDER 🔓</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- ========================================================================
-       2. APLICACIÓN PRINCIPAL (PANEL DEL DUEÑO SPA)
+       3. APLICACIÓN PRINCIPAL (PANEL DEL DUEÑO SPA CON CUADROS INTERACTIVOS)
        ======================================================================== -->
   <div class="app-shell" id="appShell">
     
     <!-- Top Header HUD -->
     <header class="top-header">
       <div class="brand-group">
-        <div class="brand-logo-txt">HAPPY <span>TACTICAL</span> // ADMIN</div>
-        <div class="status-pill">
+        <div class="brand-logo-txt">HAPPY <span>TACTICAL</span> // ADMIN HUD</div>
+        <div class="user-profile-badge">
+          <div class="user-avatar-icon" id="userAvatarLetter">A</div>
+          <span class="user-name-txt" id="displayUsername">admin</span>
           <span class="pulse-dot"></span>
-          <span>SISTEMA EN LÍNEA</span>
         </div>
       </div>
 
@@ -683,7 +784,7 @@
           <span>GUARDAR CAMBIOS</span> 💾
         </button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="lockAdmin()" title="Cerrar sesión">
-          <span>BLOQUEAR</span> 🔒
+          <span>SALIR</span> 🔒
         </button>
       </div>
     </header>
@@ -722,7 +823,10 @@
           <span class="sidebar-icon">🎬</span> Videoteca Táctica
         </button>
 
-        <div class="nav-category-title">SISTEMA</div>
+        <div class="nav-category-title">SEGURIDAD & USUARIO</div>
+        <button type="button" class="sidebar-btn" onclick="switchTab('tab-user', this)">
+          <span class="sidebar-icon">👤</span> Usuario &amp; Claves
+        </button>
         <button type="button" class="sidebar-btn" onclick="switchTab('tab-system', this)">
           <span class="sidebar-icon">⚙️</span> Respaldos &amp; Exportar
         </button>
@@ -731,87 +835,97 @@
       <!-- Main Content Tabs -->
       <main class="content-area">
 
-        <!-- ==================================================================
-             TAB 1: RESUMEN OPERATIVO (OVERVIEW)
-             ================================================================== -->
+        <!-- TAB 1: RESUMEN OPERATIVO -->
         <section class="tab-content active" id="tab-overview">
           <div class="module-header">
             <div>
               <h2 class="module-title">RESUMEN <span>OPERATIVO</span></h2>
-              <p class="module-desc">Estado general de tu sitio web, métricas de contenido y accesos directos.</p>
+              <p class="module-desc">Estado general de tu plataforma, métricas en vivo y accesos directos.</p>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" onclick="saveAllChanges()">Sincronizar Todo 💾</button>
           </div>
 
-          <div class="stat-grid">
-            <div class="stat-card">
-              <div class="stat-icon-wrap">📚</div>
-              <div>
-                <div class="stat-val">3</div>
-                <div class="stat-lbl">Cursos Activos</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <div class="interactive-card" style="margin: 0; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 24px;">📚</span>
+                <span class="badge-tag">PROGRAMAS</span>
               </div>
+              <div style="font-family: var(--font-display); font-size: 24px; font-weight: 800; color: #fff; margin-top: 8px;">3 Cursos</div>
+              <div style="font-size: 11.5px; color: var(--text-dim);">Seguridad, Emergencias, TCCC</div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon-wrap">📅</div>
-              <div>
-                <div class="stat-val" id="statScheduleCount">4</div>
-                <div class="stat-lbl">Fechas en Calendario</div>
+
+            <div class="interactive-card" style="margin: 0; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 24px;">📅</span>
+                <span class="badge-tag">CALENDARIO</span>
               </div>
+              <div style="font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--neon-cyan); margin-top: 8px;" id="statScheduleCount">4</div>
+              <div style="font-size: 11.5px; color: var(--text-dim);">Fechas programadas 2026</div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon-wrap">📸</div>
-              <div>
-                <div class="stat-val" id="statGalleryCount">8</div>
-                <div class="stat-lbl">Fotos en Galería</div>
+
+            <div class="interactive-card" style="margin: 0; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 24px;">🎬</span>
+                <span class="badge-tag">VIDEOTECA</span>
               </div>
+              <div style="font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--neon-pink); margin-top: 8px;" id="statVideoCount">4</div>
+              <div style="font-size: 11.5px; color: var(--text-dim);">Videos en campo 4K</div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon-wrap">🎬</div>
-              <div>
-                <div class="stat-val" id="statVideoCount">5</div>
-                <div class="stat-lbl">Videos Tácticos</div>
+
+            <div class="interactive-card" style="margin: 0; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 24px;">📸</span>
+                <span class="badge-tag">GALERÍA</span>
               </div>
+              <div style="font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--neon-green); margin-top: 8px;" id="statGalleryCount">8</div>
+              <div style="font-size: 11.5px; color: var(--text-dim);">Fotos en Photo Stream</div>
             </div>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>⚡</span> Accesos Rápidos de Configuración</h3>
-            <p class="form-hint" style="margin-bottom: 16px;">Edita rápidamente los datos más importantes que ven tus clientes en la web:</p>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <button type="button" class="btn btn-secondary" onclick="switchTab('tab-contact', document.querySelectorAll('.sidebar-btn')[1])">Actualizar WhatsApp 📲</button>
-              <button type="button" class="btn btn-secondary" onclick="switchTab('tab-schedule', document.querySelectorAll('.sidebar-btn')[4])">Agregar Fechas de Curso 📅</button>
-              <button type="button" class="btn btn-secondary" onclick="switchTab('tab-videos', document.querySelectorAll('.sidebar-btn')[6])">Gestionar Videos de YouTube 🎬</button>
-              <button type="button" class="btn btn-secondary" onclick="switchTab('tab-system', document.querySelectorAll('.sidebar-btn')[7])">Exportar Archivo HTML 💾</button>
+          <!-- Cuadro de Enlace de WhatsApp Rápido -->
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>📲</span> Enlace Directo de WhatsApp Activo</span>
+              <span class="badge-tag" style="background: rgba(37, 211, 102, 0.15); border-color: rgba(37, 211, 102, 0.4); color: #25d366;">CONECTADO</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">Todos los botones de la web redirigen actualmente a tu canal oficial:</p>
+            <div class="whatsapp-preview-box">
+              <span style="font-size: 22px;">💬</span>
+              <div class="wa-bubble">
+                <strong>Happy Tactical Sede Central:</strong><br>
+                Hola Happy Tactical, quisiera información sobre los cursos y próximas fechas de capacitación.
+                <div class="wa-bubble-time" id="previewWaNumberDisplay">+51 977 331 267 ✓✓</div>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- ==================================================================
-             TAB 2: WHATSAPP, CONTACTO & BANNERS
-             ================================================================== -->
+        <!-- TAB 2: WHATSAPP Y ENLACES -->
         <section class="tab-content" id="tab-contact">
           <div class="module-header">
             <div>
-              <h2 class="module-title">WHATSAPP &amp; <span>CANALES DE CONTACTO</span></h2>
-              <p class="module-desc">Configura los números de atención, enlaces de mensajería y cintillos superiores.</p>
+              <h2 class="module-title">WHATSAPP &amp; <span>ENLACES DE CONTACTO</span></h2>
+              <p class="module-desc">Cuadro interactivo para actualizar teléfonos, correo y cintillos de aviso.</p>
             </div>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>📲</span> Canales de Atención Inmediata</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>📞</span> Cuadro de Atención Telefónica y Mensajería</span>
+            </div>
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label" for="cfgWhatsApp">Número de WhatsApp (Sin espacios ni símbolos)</label>
-                <input type="text" id="cfgWhatsApp" class="form-input" placeholder="51977331267">
-                <span class="form-hint">Ej: 51977331267 (Código país 51 + 9 dígitos)</span>
+                <label class="form-label" for="cfgWhatsApp">WhatsApp Directo (Sin espacios ni símbolos)</label>
+                <input type="text" id="cfgWhatsApp" class="form-input" placeholder="51977331267" oninput="updateWhatsAppPreview()">
+                <span class="form-hint">Ej: 51977331267</span>
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgWhatsAppDisplay">WhatsApp Formato Visible</label>
-                <input type="text" id="cfgWhatsAppDisplay" class="form-input" placeholder="+51 977 331 267">
-                <span class="form-hint">Ej: +51 977 331 267</span>
+                <label class="form-label" for="cfgWhatsAppDisplay">WhatsApp Formato Visible al Cliente</label>
+                <input type="text" id="cfgWhatsAppDisplay" class="form-input" placeholder="+51 977 331 267" oninput="updateWhatsAppPreview()">
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgPhone">Central Telefónica / Teléfono</label>
+                <label class="form-label" for="cfgPhone">Central Telefónica / Teléfono Fijo</label>
                 <input type="text" id="cfgPhone" class="form-input" placeholder="+51 977 331 267">
               </div>
               <div class="form-group">
@@ -821,49 +935,51 @@
             </div>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>📡</span> Cintillo Superior HUD (Marquesina)</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>📡</span> Cuadro de Marquesina y Banner Superior HUD</span>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="cfgHudBanner">Texto de Estado / Convocatoria</label>
                 <input type="text" id="cfgHudBanner" class="form-input" placeholder="SISTEMA OPERATIVO | CONVOCATORIA 2026">
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgHudSubtitle">Subtítulo Descriptivo Superior</label>
+                <label class="form-label" for="cfgHudSubtitle">Subtítulo Superior Táctico</label>
                 <input type="text" id="cfgHudSubtitle" class="form-input" placeholder="SEDE LIMA • CERTIFICACIÓN OFICIAL • ASISTENCIA 24/7">
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ==================================================================
-             TAB 3: HERO & TEXTOS DE MARCA
-             ================================================================== -->
+        <!-- TAB 3: HERO & TEXTOS -->
         <section class="tab-content" id="tab-hero">
           <div class="module-header">
             <div>
               <h2 class="module-title">HERO &amp; <span>TEXTOS DE MARCA</span></h2>
-              <p class="module-desc">Personaliza los títulos principales, lemas de combate y doctrina institucional.</p>
+              <p class="module-desc">Edita los títulos de impacto, lemas y doctrinas de instrucción.</p>
             </div>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>🎯</span> Sección Principal (Hero Section)</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>🎯</span> Cuadro del Hero Principal</span>
+            </div>
             <div class="form-grid">
               <div class="form-group full-width">
                 <label class="form-label" for="cfgHeroBadge">Insignia Superior del Hero</label>
                 <input type="text" id="cfgHeroBadge" class="form-input" placeholder="[ FORMACIÓN OPERATIVA & SEGURIDAD DE ÉLITE ]">
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgHeroSub1">Palabra Clave 1 (Cyan)</label>
+                <label class="form-label" for="cfgHeroSub1">Palabra 1 (Cyan)</label>
                 <input type="text" id="cfgHeroSub1" class="form-input" placeholder="FORMACIÓN">
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgHeroSub2">Palabra Clave 2 (Blanco)</label>
+                <label class="form-label" for="cfgHeroSub2">Palabra 2 (Blanco)</label>
                 <input type="text" id="cfgHeroSub2" class="form-input" placeholder="DISCIPLINA">
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgHeroSub3">Palabra Clave 3 (Magenta / Glow)</label>
+                <label class="form-label" for="cfgHeroSub3">Palabra 3 (Glow Magenta)</label>
                 <input type="text" id="cfgHeroSub3" class="form-input" placeholder="SEGURIDAD TOTAL">
               </div>
               <div class="form-group full-width">
@@ -873,42 +989,45 @@
             </div>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>🛡️</span> Misión y Doctrina (Sección Nosotros)</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>🛡️</span> Cuadro de Misión y Enfoque Operativo</span>
+            </div>
             <div class="form-grid">
               <div class="form-group full-width">
                 <label class="form-label" for="cfgAboutTitle">Título de Misión Estratégica</label>
                 <input type="text" id="cfgAboutTitle" class="form-input" placeholder="PREPARACIÓN ESTRATÉGICA ANTE CUALQUIER ESCENARIO">
               </div>
               <div class="form-group full-width">
-                <label class="form-label" for="cfgAboutDesc">Texto Completo de Doctrina y Enfoque Operativo</label>
+                <label class="form-label" for="cfgAboutDesc">Doctrina Institucional y Enfoque</label>
                 <textarea id="cfgAboutDesc" class="form-textarea" rows="4"></textarea>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ==================================================================
-             TAB 4: GESTOR DE LOS 3 CURSOS
-             ================================================================== -->
+        <!-- TAB 4: LOS 3 CURSOS -->
         <section class="tab-content" id="tab-courses">
           <div class="module-header">
             <div>
-              <h2 class="module-title">PROGRAMAS &amp; <span>LOS 3 CURSOS</span></h2>
-              <p class="module-desc">Edita la información, horas académicas y contenido de los cursos tácticos oficiales.</p>
+              <h2 class="module-title">GESTIÓN DE <span>LOS 3 CURSOS</span></h2>
+              <p class="module-desc">Cuadros independientes para editar horas, contenidos y temarios de cada curso.</p>
             </div>
           </div>
 
           <!-- Curso 1 -->
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>01</span> Curso de Seguridad y Prevención</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>01</span> Curso de Seguridad y Prevención</span>
+              <span class="badge-tag">PROGRAMA ACTIVO</span>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="cfgC1Title">Título del Curso</label>
                 <input type="text" id="cfgC1Title" class="form-input">
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgC1Hours">Duración / Horas</label>
+                <label class="form-label" for="cfgC1Hours">Horas Académicas</label>
                 <input type="text" id="cfgC1Hours" class="form-input" placeholder="40 Horas">
               </div>
               <div class="form-group full-width">
@@ -919,15 +1038,18 @@
           </div>
 
           <!-- Curso 2 -->
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>02</span> Curso de Gestión de Emergencias</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>02</span> Curso de Gestión de Emergencias & SCI</span>
+              <span class="badge-tag">PROGRAMA ACTIVO</span>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="cfgC2Title">Título del Curso</label>
                 <input type="text" id="cfgC2Title" class="form-input">
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgC2Hours">Duración / Horas</label>
+                <label class="form-label" for="cfgC2Hours">Horas Académicas</label>
                 <input type="text" id="cfgC2Hours" class="form-input" placeholder="32 Horas">
               </div>
               <div class="form-group full-width">
@@ -938,15 +1060,18 @@
           </div>
 
           <!-- Curso 3 -->
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>03</span> Curso de Primeros Auxilios Tácticos (TCCC)</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>03</span> Curso de Primeros Auxilios Tácticos (TCCC)</span>
+              <span class="badge-tag">PROGRAMA ACTIVO</span>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="cfgC3Title">Título del Curso</label>
                 <input type="text" id="cfgC3Title" class="form-input">
               </div>
               <div class="form-group">
-                <label class="form-label" for="cfgC3Hours">Duración / Horas</label>
+                <label class="form-label" for="cfgC3Hours">Horas Académicas</label>
                 <input type="text" id="cfgC3Hours" class="form-input" placeholder="24 Horas">
               </div>
               <div class="form-group full-width">
@@ -957,92 +1082,110 @@
           </div>
         </section>
 
-        <!-- ==================================================================
-             TAB 5: GESTOR DE CALENDARIO 2026
-             ================================================================== -->
+        <!-- TAB 5: CALENDARIO -->
         <section class="tab-content" id="tab-schedule">
           <div class="module-header">
             <div>
-              <h2 class="module-title">CALENDARIO &amp; <span>FECHAS DE CONVOCATORIA</span></h2>
-              <p class="module-desc">Programa nuevas fechas de capacitación, gestiona vacantes y sincronizaciones con iCal/Google.</p>
+              <h2 class="module-title">CALENDARIO &amp; <span>CONVOCATORIAS 2026</span></h2>
+              <p class="module-desc">Programa fechas de capacitación con selector visual interactivo.</p>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" onclick="addNewScheduleItem()">+ Nueva Fecha</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addNewScheduleItem()">+ Nueva Fecha 📅</button>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>📅</span> Fechas Registradas en el Calendario</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>📅</span> Fechas Programadas en el Calendario</span>
+            </div>
             <div class="item-list" id="scheduleItemsContainer">
-              <!-- Rendered dynamically by JS -->
+              <!-- Rendered dynamically -->
             </div>
           </div>
         </section>
 
-        <!-- ==================================================================
-             TAB 6: GALERÍA DE FOTOS (PHOTO STREAM)
-             ================================================================== -->
+        <!-- TAB 6: GALERÍA -->
         <section class="tab-content" id="tab-gallery">
           <div class="module-header">
             <div>
-              <h2 class="module-title">GALERÍA CONTINUA <span>EN ACCIÓN</span></h2>
-              <p class="module-desc">Administra el flujo de fotografías operativas que se muestran en el carrusel táctico.</p>
+              <h2 class="module-title">GALERÍA DE FOTOS <span>(PHOTO STREAM)</span></h2>
+              <p class="module-desc">Gestiona las imágenes en alta resolución del flujo visual continuo.</p>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" onclick="addNewGalleryItem()">+ Añadir Foto</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addNewGalleryItem()">+ Añadir Foto 📸</button>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>📸</span> Catálogo de Imágenes del Stream</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>📸</span> Catálogo de Fotografías Tácticas</span>
+            </div>
             <div class="item-list" id="galleryItemsContainer">
-              <!-- Rendered dynamically by JS -->
+              <!-- Rendered dynamically -->
             </div>
           </div>
         </section>
 
-        <!-- ==================================================================
-             TAB 7: VIDEOTECA OPERATIVA TÁCTICA
-             ================================================================== -->
+        <!-- TAB 7: VIDEOTECA -->
         <section class="tab-content" id="tab-videos">
           <div class="module-header">
             <div>
               <h2 class="module-title">VIDEOTECA <span>OPERATIVA TÁCTICA</span></h2>
-              <p class="module-desc">Añade o modifica los videos de YouTube/Vimeo, define el video destacado Spotlight y categorías.</p>
+              <p class="module-desc">Cuadro interactivo con detección automática de miniaturas de YouTube.</p>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" onclick="addNewVideoItem()">+ Añadir Video</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addNewVideoItem()">+ Añadir Video 🎬</button>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>🎬</span> Catálogo de Videos Tácticos</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>🎬</span> Catálogo de Videos en Campo</span>
+            </div>
             <div class="item-list" id="videoItemsContainer">
-              <!-- Rendered dynamically by JS -->
+              <!-- Rendered dynamically -->
             </div>
           </div>
         </section>
 
-        <!-- ==================================================================
-             TAB 8: SISTEMA & EXPORTACIÓN
-             ================================================================== -->
-        <section class="tab-content" id="tab-system">
+        <!-- TAB 8: SEGURIDAD & USUARIO -->
+        <section class="tab-content" id="tab-user">
           <div class="module-header">
             <div>
-              <h2 class="module-title">SISTEMA, <span>PIN &amp; RESPALDOS</span></h2>
-              <p class="module-desc">Cambia la clave de acceso, restaura configuraciones o descarga el archivo HTML completo.</p>
+              <h2 class="module-title">USUARIO REGISTRADO &amp; <span>SEGURIDAD</span></h2>
+              <p class="module-desc">Administra el usuario del propietario, cambia tu PIN y gestiona la sesión.</p>
             </div>
           </div>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>🔐</span> Modificar PIN del Propietario</h3>
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>👤</span> Perfil del Operador Propietario</span>
+              <span class="badge-tag">AUTENTICADO</span>
+            </div>
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label" for="cfgNewPin">Nuevo PIN de 4 dígitos</label>
-                <input type="password" id="cfgNewPin" class="form-input" maxlength="4" placeholder="7788">
-                <span class="form-hint">El PIN predeterminado es 7788.</span>
+                <label class="form-label" for="cfgAdminUser">Nombre de Usuario</label>
+                <input type="text" id="cfgAdminUser" class="form-input" placeholder="admin" value="admin">
+                <span class="form-hint">Usuario para acceder al centro de mando.</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgNewPin">PIN Maestro / Contraseña (4 dígitos)</label>
+                <input type="password" id="cfgNewPin" class="form-input" maxlength="4" placeholder="7788" style="letter-spacing: 4px;">
+                <span class="form-hint">Clave numérica de 4 dígitos.</span>
               </div>
             </div>
           </div>
+        </section>
 
-          <div class="card-panel">
-            <h3 class="card-panel-title"><span>💾</span> Exportar / Restaurar Configuración</h3>
-            <p class="form-hint" style="margin-bottom: 16px;">
-              Puedes generar y descargar el archivo <code>index.html</code> actualizado con todos tus cambios inyectados para respaldarlo o subirlo a tu hosting.
+        <!-- TAB 9: SISTEMA & EXPORTAR -->
+        <section class="tab-content" id="tab-system">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">SISTEMA &amp; <span>EXPORTACIÓN HTML</span></h2>
+              <p class="module-desc">Descarga el código fuente actualizado o restablece valores de fábrica.</p>
+            </div>
+          </div>
+
+          <div class="interactive-card">
+            <div class="card-header-bar">
+              <span class="card-badge-title"><span>💾</span> Respaldo y Exportación Completa</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 18px;">
+              Todos tus cambios se sincronizan en vivo en el navegador. Si deseas descargar el archivo <code>index.html</code> empaquetado para alojarlo en un servidor externo, pulsa el botón a continuación:
             </p>
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
               <button type="button" class="btn btn-primary" onclick="exportUpdatedHTML()">Descargar index.html Actualizado 📥</button>
@@ -1054,16 +1197,16 @@
       </main>
     </div>
 
-    <!-- Floating Sticky Save Bar -->
+    <!-- Floating Save Bar -->
     <footer class="save-bar-fixed">
       <div style="display: flex; align-items: center; gap: 10px;">
         <span class="pulse-dot"></span>
         <span style="font-family: var(--font-display); font-size: 11px; color: var(--text-dim); letter-spacing: 0.8px;">
-          CAMBIOS GUARDADOS LOCALMENTE EN TU NAVEGADOR
+          SINCRONIZACIÓN ACTIVA CON INDEX.HTML
         </span>
       </div>
       <div style="display: flex; gap: 10px;">
-        <a href="index.html" class="btn btn-secondary btn-sm">CANCELAR</a>
+        <a href="index.html" class="btn btn-secondary btn-sm">VOLVER A LA WEB</a>
         <button type="button" class="btn btn-primary btn-sm" onclick="saveAllChanges()">
           GUARDAR TODOS LOS CAMBIOS 💾
         </button>
@@ -1077,11 +1220,12 @@
     <span>✅</span> <span id="toastMsg">Cambios guardados con éxito</span>
   </div>
 
-  <!-- JavaScript Engine -->
+  <!-- Script Engine -->
   <script>
     const STORAGE_KEY = 'HT_CUSTOM_CONFIG_V2';
 
     const DEFAULT_CONFIG = {
+      user: 'admin',
       pin: '7788',
       whatsApp: '51977331267',
       whatsAppDisplay: '+51 977 331 267',
@@ -1115,9 +1259,7 @@
           details: 'Modalidad Presencial Lima • Sábados 09:00 - 14:00 • Incluye manual y acreditación',
           category: 'seguridad',
           status: 'open',
-          statusText: 'CONVOCATORIA ABIERTA',
-          startTime: '09:00',
-          endTime: '14:00'
+          statusText: 'CONVOCATORIA ABIERTA'
         },
         {
           id: 2,
@@ -1128,9 +1270,7 @@
           details: 'Prácticas de campo en rescate y comando • Certificado oficial',
           category: 'emergencias',
           status: 'open',
-          statusText: 'CONVOCATORIA ABIERTA',
-          startTime: '09:00',
-          endTime: '15:00'
+          statusText: 'CONVOCATORIA ABIERTA'
         },
         {
           id: 3,
@@ -1141,9 +1281,7 @@
           details: 'Entrenamiento intensivo en control de hemorragias y trauma bajo fuego simulado',
           category: 'primeros-auxilios',
           status: 'few',
-          statusText: 'ÚLTIMOS CUPOS',
-          startTime: '08:30',
-          endTime: '16:30'
+          statusText: 'ÚLTIMOS CUPOS'
         },
         {
           id: 4,
@@ -1154,9 +1292,7 @@
           details: 'Capacitación a medida para brigadistas de seguridad y respuesta institucional',
           category: 'corporativo',
           status: 'open',
-          statusText: 'AGENDA DISPONIBLE',
-          startTime: '09:00',
-          endTime: '13:00'
+          statusText: 'AGENDA DISPONIBLE'
         }
       ],
       galleryImages: [
@@ -1165,32 +1301,28 @@
           title: 'Procedimiento de Control de Hemorragias TCCC',
           badge: 'TCCC MEDICINE',
           location: 'Lima - Sede Operativa',
-          url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
-          desc: 'Aplicación correcta de torniquetes CAT Gen 7 y empaquetamiento de heridas bajo protocolo MARCH.'
+          url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80'
         },
         {
           id: 'gal-2',
           title: 'Entrenamiento de Tiro Táctico Defensivo',
           badge: 'POLÍGONO SUR',
           location: 'Polígono de Tiro Especializado',
-          url: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80',
-          desc: 'Técnicas dinámicas de tiro, transiciones de arma primaria a secundaria y resolución de encasquillamientos.'
+          url: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80'
         },
         {
           id: 'gal-3',
           title: 'Extracción Rápida de Heridos en Zona Bajo Fuego',
           badge: 'EVACUACIÓN CARE',
           location: 'Base de Maniobras',
-          url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
-          desc: 'Arrastre táctico, uso de camillas plegables Sked y aseguramiento del perímetro durante la atención.'
+          url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80'
         },
         {
           id: 'gal-4',
           title: 'Formación de Brigadas Industriales y Rescate',
           badge: 'BRIGADAS LEY 29783',
           location: 'Instalaciones Corporativas',
-          url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80',
-          desc: 'Capacitación para brigadistas empresariales en control de amagos de incendio y evacuación de emergencia.'
+          url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80'
         }
       ],
       videos: [
@@ -1201,8 +1333,7 @@
           duration: '04:20',
           category: 'primeros-auxilios',
           thumbnail: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
-          videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
-          desc: 'Demostración práctica de colocación de torniquete CAT bajo fuego simulado, hemostáticos y evacuación rápida en zona de amenaza directa.'
+          videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
         },
         {
           id: 'vid-2',
@@ -1211,8 +1342,7 @@
           duration: '03:45',
           category: 'seguridad',
           thumbnail: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80',
-          videoUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk',
-          desc: 'Técnicas avanzadas de desenfunde, recargas tácticas y tiro defensivo dinámico para escoltas y fuerzas de seguridad.'
+          videoUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk'
         },
         {
           id: 'vid-3',
@@ -1221,8 +1351,7 @@
           duration: '05:10',
           category: 'emergencias',
           thumbnail: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
-          videoUrl: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
-          desc: 'Ejercicios prácticos de búsqueda, extracción y estabilización de pacientes en situaciones críticas de catástrofe.'
+          videoUrl: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ'
         },
         {
           id: 'vid-4',
@@ -1231,8 +1360,7 @@
           duration: '03:15',
           category: 'corporativo',
           thumbnail: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          desc: 'Formación integral de brigadas de lucha contra incendios, primeros auxilios y evacuación en plantas industriales y centros corporativos.'
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
         }
       ]
     };
@@ -1285,12 +1413,25 @@
       setVal('cfgC3Hours', APP_CONFIG.c3Hours);
       setVal('cfgC3Desc', APP_CONFIG.c3Desc);
 
+      setVal('cfgAdminUser', APP_CONFIG.user || 'admin');
       setVal('cfgNewPin', APP_CONFIG.pin || '7788');
 
+      const userDisplay = document.getElementById('displayUsername');
+      if (userDisplay) userDisplay.textContent = APP_CONFIG.user || 'admin';
+      const userLetter = document.getElementById('userAvatarLetter');
+      if (userLetter) userLetter.textContent = (APP_CONFIG.user || 'A').charAt(0).toUpperCase();
+
+      updateWhatsAppPreview();
       renderScheduleList();
       renderGalleryList();
       renderVideoList();
       updateOverviewStats();
+    }
+
+    function updateWhatsAppPreview() {
+      const waDisplay = document.getElementById('cfgWhatsAppDisplay')?.value || APP_CONFIG.whatsAppDisplay || '+51 977 331 267';
+      const preview = document.getElementById('previewWaNumberDisplay');
+      if (preview) preview.textContent = waDisplay + ' ✓✓';
     }
 
     function updateOverviewStats() {
@@ -1302,7 +1443,7 @@
       if (vCount) vCount.textContent = (APP_CONFIG.videos || []).length;
     }
 
-    // 3. RENDERIZAR LISTAS (CALENDARIO, GALERÍA, VIDEOS)
+    // 3. RENDER LISTAS
     function renderScheduleList() {
       const container = document.getElementById('scheduleItemsContainer');
       if (!container) return;
@@ -1310,11 +1451,10 @@
 
       container.innerHTML = list.map((item, idx) => `
         <div class="item-row">
-          <div class="item-meta">
-            <div class="item-title">${item.title}</div>
-            <div class="item-sub">
-              <span class="badge-tag">${item.date} (${item.isoDate})</span>
-              <span>• ${item.group} •</span>
+          <div>
+            <div style="font-family: var(--font-display); font-size: 14px; font-weight: 700; color: #fff;">${item.title}</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px; display:flex; align-items:center; gap: 8px;">
+              <span class="badge-tag">${item.date}</span>
               <span style="color: var(--neon-cyan); font-weight:700;">${item.statusText}</span>
             </div>
           </div>
@@ -1330,13 +1470,10 @@
 
       container.innerHTML = list.map((item, idx) => `
         <div class="item-row">
-          <img src="${item.url}" alt="${item.title}" style="width: 60px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);">
-          <div class="item-meta">
-            <div class="item-title">${item.title}</div>
-            <div class="item-sub">
-              <span class="badge-tag">${item.badge}</span>
-              <span>📍 ${item.location}</span>
-            </div>
+          <img src="${item.url}" alt="${item.title}" style="width: 54px; height: 38px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);">
+          <div style="flex:1;">
+            <div style="font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: #fff;">${item.title}</div>
+            <div style="font-size: 11.5px; color: var(--text-dim);"><span class="badge-tag">${item.badge}</span> 📍 ${item.location}</div>
           </div>
           <button type="button" class="btn btn-danger btn-sm" onclick="deleteGalleryItem(${idx})">Eliminar 🗑️</button>
         </div>
@@ -1350,12 +1487,12 @@
 
       container.innerHTML = list.map((item, idx) => `
         <div class="item-row">
-          <div class="item-meta">
-            <div class="item-title">${item.title}</div>
-            <div class="item-sub">
+          <div style="flex:1;">
+            <div style="font-family: var(--font-display); font-size: 14px; font-weight: 700; color: #fff;">${item.title}</div>
+            <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 4px; display: flex; gap: 8px; align-items: center;">
               <span class="badge-tag">${item.badge}</span>
               <span>⏱️ ${item.duration}</span>
-              <span style="color: var(--text-dim); font-size:11px;">${item.videoUrl}</span>
+              <span style="color: var(--neon-cyan);">${item.videoUrl}</span>
             </div>
           </div>
           <button type="button" class="btn btn-danger btn-sm" onclick="deleteVideoItem(${idx})">Eliminar 🗑️</button>
@@ -1363,46 +1500,43 @@
       `).join('');
     }
 
-    // 4. ACCIONES DE GESTIÓN
+    // 4. ACCIONES INTERACTIVAS
     function addNewScheduleItem() {
       const title = prompt('Título del Curso / Capacitación:');
       if (!title) return;
-      const isoDate = prompt('Fecha ISO (YYYY-MM-DD):', '2026-05-15');
-      if (!isoDate) return;
-      const dateTxt = prompt('Fecha visible (ej: 15 MAY):', '15 MAY');
+      const dateTxt = prompt('Fecha visible (ej: 25 ABR):', '25 ABR');
+      const isoDate = prompt('Fecha ISO (YYYY-MM-DD):', '2026-04-25');
 
       APP_CONFIG.schedule.push({
         id: Date.now(),
-        isoDate: isoDate,
-        date: dateTxt || '15 MAY',
+        isoDate: isoDate || '2026-04-25',
+        date: dateTxt || '25 ABR',
         group: 'GRUPO 2026',
         title: title,
-        details: 'Modalidad Presencial • Incluye manual y certificación oficial',
+        details: 'Modalidad Presencial Lima • Certificación Oficial',
         category: 'seguridad',
         status: 'open',
-        statusText: 'CONVOCATORIA ABIERTA',
-        startTime: '09:00',
-        endTime: '14:00'
+        statusText: 'CONVOCATORIA ABIERTA'
       });
 
       renderScheduleList();
       updateOverviewStats();
-      showToast('Nueva fecha agregada. Recuerda guardar cambios.');
+      showToast('Nueva fecha agregada.');
     }
 
     function deleteScheduleItem(idx) {
-      if (confirm('¿Eliminar esta fecha del calendario?')) {
+      if (confirm('¿Eliminar esta fecha?')) {
         APP_CONFIG.schedule.splice(idx, 1);
         renderScheduleList();
         updateOverviewStats();
-        showToast('Fecha eliminada del calendario.');
+        showToast('Fecha eliminada.');
       }
     }
 
     function addNewGalleryItem() {
-      const title = prompt('Título de la Fotografía Táctica:');
+      const title = prompt('Título de la Foto:');
       if (!title) return;
-      const url = prompt('URL de la imagen (o enlace Unsplash/JPG):', 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80');
+      const url = prompt('URL de la Imagen:', 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80');
       if (!url) return;
 
       APP_CONFIG.galleryImages.push({
@@ -1410,8 +1544,7 @@
         title: title,
         badge: 'TÁCTICO',
         location: 'Lima, Perú',
-        url: url,
-        desc: 'Registro oficial de actividades y entrenamiento de alta intensidad Happy Tactical.'
+        url: url
       });
 
       renderGalleryList();
@@ -1420,7 +1553,7 @@
     }
 
     function deleteGalleryItem(idx) {
-      if (confirm('¿Eliminar esta foto de la galería?')) {
+      if (confirm('¿Eliminar esta foto?')) {
         APP_CONFIG.galleryImages.splice(idx, 1);
         renderGalleryList();
         updateOverviewStats();
@@ -1429,9 +1562,9 @@
     }
 
     function addNewVideoItem() {
-      const title = prompt('Título del Video Táctico:');
+      const title = prompt('Título del Video:');
       if (!title) return;
-      const videoUrl = prompt('URL de YouTube o Vimeo:', 'https://www.youtube.com/watch?v=ScMzIvxBSi4');
+      const videoUrl = prompt('URL de YouTube:', 'https://www.youtube.com/watch?v=ScMzIvxBSi4');
       if (!videoUrl) return;
 
       APP_CONFIG.videos.push({
@@ -1441,8 +1574,7 @@
         duration: '04:00',
         category: 'seguridad',
         thumbnail: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80',
-        videoUrl: videoUrl,
-        desc: 'Demostración práctica de procedimientos operativos en campo.'
+        videoUrl: videoUrl
       });
 
       renderVideoList();
@@ -1466,6 +1598,7 @@
         return el ? el.value.trim() : '';
       };
 
+      APP_CONFIG.user = getVal('cfgAdminUser') || APP_CONFIG.user || 'admin';
       APP_CONFIG.whatsApp = getVal('cfgWhatsApp') || APP_CONFIG.whatsApp;
       APP_CONFIG.whatsAppDisplay = getVal('cfgWhatsAppDisplay') || APP_CONFIG.whatsAppDisplay;
       APP_CONFIG.phone = getVal('cfgPhone') || APP_CONFIG.phone;
@@ -1499,65 +1632,65 @@
 
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
-        showToast('¡Todos los cambios se guardaron y sincronizaron con index.html!');
+        const userDisplay = document.getElementById('displayUsername');
+        if (userDisplay) userDisplay.textContent = APP_CONFIG.user;
+        showToast('¡Cambios guardados y sincronizados con index.html!');
       } catch (e) {
-        alert('Error al guardar en el almacenamiento local: ' + e.message);
+        alert('Error al guardar: ' + e.message);
       }
     }
 
     function restoreFactoryDefaults() {
-      if (confirm('¿Restaurar toda la configuración a los valores originales de fábrica?')) {
+      if (confirm('¿Restaurar valores de fábrica?')) {
         localStorage.removeItem(STORAGE_KEY);
         APP_CONFIG = { ...DEFAULT_CONFIG };
         populateForm();
-        showToast('Configuración restaurada a valores de fábrica.');
+        showToast('Valores de fábrica restaurados.');
       }
     }
 
-    // 6. EXPORTAR HTML
     function exportUpdatedHTML() {
       saveAllChanges();
-      alert('Para descargar el archivo index.html completo con todos los cambios incluidos, visita la web principal y pulsa "Descargar index.html" en el panel.');
+      alert('Configuración sincronizada. Ya puedes abrir index.html para ver los cambios o descargarlo.');
     }
 
-    // 7. SISTEMA DE AUTENTICACIÓN
+    // 6. AUTENTICACIÓN
     function handleAuthSubmit(e) {
       e.preventDefault();
-      const input = document.getElementById('ownerPinInput');
+      const user = document.getElementById('loginUser').value.trim();
+      const pin = document.getElementById('loginPin').value.trim();
       const err = document.getElementById('authErrorMsg');
-      const validPin = APP_CONFIG.pin || DEFAULT_CONFIG.pin;
 
-      if (input && input.value.trim() === validPin) {
-        sessionStorage.setItem('HT_ADMIN_AUTHENTICATED', 'true');
+      const validUser = APP_CONFIG.user || DEFAULT_CONFIG.user || 'admin';
+      const validPin = APP_CONFIG.pin || DEFAULT_CONFIG.pin || '7788';
+
+      if (user.toLowerCase() === validUser.toLowerCase() && pin === validPin) {
+        sessionStorage.setItem('HT_ADMIN_AUTH', 'true');
         document.getElementById('authOverlay').classList.add('unlocked');
         if (err) err.style.display = 'none';
-        showToast('¡Bienvenido al Centro de Mando Happy Tactical!');
+        showToast(`¡Bienvenido Operador ${validUser}!`);
       } else {
         if (err) err.style.display = 'block';
-        if (input) {
-          input.value = '';
-          input.focus();
-        }
       }
     }
 
     function checkAuth() {
-      if (sessionStorage.getItem('HT_ADMIN_AUTHENTICATED') === 'true') {
+      if (sessionStorage.getItem('HT_ADMIN_AUTH') === 'true') {
         document.getElementById('authOverlay').classList.add('unlocked');
       }
     }
 
     function lockAdmin() {
-      sessionStorage.removeItem('HT_ADMIN_AUTHENTICATED');
+      sessionStorage.removeItem('HT_ADMIN_AUTH');
       document.getElementById('authOverlay').classList.remove('unlocked');
-      const input = document.getElementById('ownerPinInput');
-      if (input) {
-        input.value = '';
-        input.focus();
+      const pin = document.getElementById('loginPin');
+      if (pin) {
+        pin.value = '';
+        pin.focus();
       }
     }
 
-    // 8. INTERFAZ Y NAVEGACIÓN
+    // 7. INTERFAZ
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
@@ -1579,7 +1712,32 @@
       }
     }
 
-    // Inicializar al cargar
+    // 8. PRELOADER ANIMATION
+    (() => {
+      const preloader = document.getElementById('adminPreloader');
+      const bar = document.getElementById('adminPreloaderBar');
+      const pct = document.getElementById('adminPreloaderPct');
+      if (!preloader) return;
+
+      let p = 0;
+      const interval = setInterval(() => {
+        p += Math.floor(Math.random() * 20) + 12;
+        if (p >= 100) {
+          p = 100;
+          clearInterval(interval);
+          if (bar) bar.style.width = '100%';
+          if (pct) pct.textContent = '100%';
+          setTimeout(() => {
+            preloader.classList.add('loaded');
+          }, 350);
+        } else {
+          if (bar) bar.style.width = p + '%';
+          if (pct) pct.textContent = p + '%';
+        }
+      }, 50);
+    })();
+
+    // Iniciar al cargar
     document.addEventListener('DOMContentLoaded', () => {
       loadConfig();
       checkAuth();
