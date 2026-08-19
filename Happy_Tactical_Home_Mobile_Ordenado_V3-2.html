@@ -3017,6 +3017,10 @@
     }
 
   </style>
+  <!-- FIREBASE CLOUD REAL-TIME ENGINE -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
 </head>
 <body>
 
@@ -4230,6 +4234,40 @@
     }
 
     // --- Hydration & Synchronization ---
+    
+    // --- Escucha en Tiempo Real desde Firebase Cloud Firestore ---
+    function initFirebaseRealtimeSync() {
+      if (!firestoreDB) return;
+      try {
+        firestoreDB.collection('happytactical').doc('global_config')
+          .onSnapshot((doc) => {
+            if (doc.exists) {
+              const cloudData = doc.data();
+              console.log('⚡ Sincronización en Tiempo Real desde Firebase Cloud recibida');
+              HT_CONFIG = Object.assign({}, DEFAULT_CONFIG, cloudData);
+              if (cloudData.galleryImages && Array.isArray(cloudData.galleryImages)) {
+                HT_CONFIG.galleryImages = cloudData.galleryImages;
+              }
+              if (cloudData.videos && Array.isArray(cloudData.videos)) {
+                HT_CONFIG.videos = cloudData.videos;
+              }
+              if (cloudData.schedule && Array.isArray(cloudData.schedule)) {
+                HT_CONFIG.schedule = cloudData.schedule;
+              }
+              applyConfigToDOM();
+      initFirebaseRealtimeSync();
+              renderGalleryStream();
+              if (typeof renderTacticalVideos === 'function') renderTacticalVideos();
+              if (typeof renderScheduleList === 'function') renderScheduleList();
+            }
+          }, (err) => {
+            console.warn('Aviso de escucha Firebase Cloud:', err);
+          });
+      } catch (errListener) {
+        console.warn('Error inicializando escucha Firebase:', errListener);
+      }
+    }
+    
     async function loadSavedConfig() {
       try {
         let saved = localStorage.getItem(STORAGE_KEY);
@@ -4285,6 +4323,7 @@
       }
 
       applyConfigToDOM();
+      initFirebaseRealtimeSync();
     }
 
     function applyConfigToDOM() {
@@ -4657,6 +4696,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
           try { syncChannel.postMessage({ type: 'config_updated' }); } catch(e) {}
         }
         applyConfigToDOM();
+      initFirebaseRealtimeSync();
         if (showFeedback) showToast('✓ CONFIGURACIÓN GUARDADA CON ÉXITO');
       } catch (e) {
         console.error('Error saving config', e);

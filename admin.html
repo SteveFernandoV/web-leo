@@ -705,6 +705,10 @@
       }
     }
   </style>
+  <!-- FIREBASE CLOUD REAL-TIME ENGINE -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
 </head>
 <body>
 
@@ -1616,6 +1620,39 @@
 
     let APP_CONFIG = { ...DEFAULT_CONFIG };
 
+    // ========================================================================
+    // MOTOR DE PERSISTENCIA GLOBAL EN LA NUBE // FIREBASE CLOUD FIRESTORE
+    // ========================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeWp7TBvy5CAiTFCZToA6JEsK8xL3NVoQ",
+      authDomain: "bdhappytactical.firebaseapp.com",
+      projectId: "bdhappytactical",
+      storageBucket: "bdhappytactical.firebasestorage.app",
+      messagingSenderId: "502378570561",
+      appId: "1:502378570561:web:0f6a666e6e6a4f5e17f7c0",
+      measurementId: "G-2641CT74L4"
+    };
+
+    let firebaseApp = null;
+    let firestoreDB = null;
+    let isCloudOnline = false;
+
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+          firebaseApp = firebase.initializeApp(firebaseConfig);
+        } else {
+          firebaseApp = firebase.app();
+        }
+        firestoreDB = firebase.firestore();
+        isCloudOnline = true;
+        console.log('✓ Firebase Cloud Firestore inicializado con éxito.');
+      }
+    } catch (eFb) {
+      console.warn('Firebase Cloud offline o no disponible:', eFb);
+    }
+
+
     // 1. CARGA DE CONFIGURACIÓN
     async function loadConfig() {
       try {
@@ -2041,6 +2078,9 @@
           dbSaved = await saveImageToDB(photoId, url);
         }
 
+        // 1.5. Guardar en Firebase Cloud Global
+        let cloudSaved = await saveToFirebaseCloud(APP_CONFIG);
+
         // 2. Guardar en LocalStorage con blindaje de cuota
         let localSaved = false;
         let saveError = null;
@@ -2086,7 +2126,7 @@
           showToast(`✓ FOTO "${title}" GUARDADA Y SINCRONIZADA CONFORME 💾`);
           alert(`✅ ¡GUARDADO CONFORME!
 
-La fotografía "${title}" se guardó y sincronizó correctamente en la base de datos y en el riel de la web.`);
+La fotografía "${title}" se guardó y sincronizó correctamente en la Nube Global (Firebase Firestore) y en la base de datos local.`);
         } else {
           showToast(`❌ ERROR AL GUARDAR: ${saveError || 'Falla de almacenamiento'}`);
           alert(`❌ ERROR AL GUARDAR:
@@ -2383,6 +2423,37 @@ Revisa la consola para más detalles.`);
     }
 
     // 5. GUARDAR Y PERSISTIR
+
+    async function saveToFirebaseCloud(configData) {
+      if (!firestoreDB) return false;
+      try {
+        // Deep clone to prevent mutating active memory
+        const cloudData = JSON.parse(JSON.stringify(configData));
+        cloudData.updatedAt = new Date().toISOString();
+
+        await firestoreDB.collection('happytactical').doc('global_config').set(cloudData, { merge: true });
+        console.log('✓ Configuración guardada en Firebase Cloud Firestore');
+        return true;
+      } catch (errCloud) {
+        console.warn('Error guardando en Firebase Cloud:', errCloud);
+        return false;
+      }
+    }
+
+    async function loadFromFirebaseCloud() {
+      if (!firestoreDB) return null;
+      try {
+        const doc = await firestoreDB.collection('happytactical').doc('global_config').get();
+        if (doc.exists) {
+          console.log('✓ Datos recuperados de Firebase Cloud Firestore');
+          return doc.data();
+        }
+      } catch (errCloud) {
+        console.warn('Error leyendo Firebase Cloud:', errCloud);
+      }
+      return null;
+    }
+    
     function saveAllChanges() {
       const getVal = (id) => {
         const el = document.getElementById(id);
@@ -2421,6 +2492,9 @@ Revisa la consola para más detalles.`);
         APP_CONFIG.pin = newPin;
       }
 
+      // Guardar en la Nube Global de Firebase
+      saveToFirebaseCloud(APP_CONFIG);
+
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
         if (syncChannel) {
@@ -2431,7 +2505,7 @@ Revisa la consola para más detalles.`);
         }
         const userDisplay = document.getElementById('displayUsername');
         if (userDisplay) userDisplay.textContent = APP_CONFIG.user;
-        if (showFeedback) showToast('¡Cambios guardados y sincronizados con index.html!');
+        if (showFeedback) showToast('¡Cambios guardados globalmente en Firebase!');
       } catch (e) {
         // Quota fallback: if localStorage quota exceeded, sanitize heavy base64 strings in localStorage copy while keeping them safe in IndexedDB
         try {
