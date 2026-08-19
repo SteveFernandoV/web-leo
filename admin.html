@@ -172,7 +172,7 @@
       inset: 0;
       background: radial-gradient(circle at 50% 40%, rgba(13, 22, 36, 0.96) 0%, rgba(3, 6, 12, 0.99) 100%);
       backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
       z-index: 100000;
       display: flex;
       align-items: center;
@@ -246,7 +246,7 @@
       background: rgba(6, 10, 16, 0.95);
       border-bottom: 1px solid var(--border-card);
       backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       padding: 12px 28px;
       display: flex;
       align-items: center;
@@ -380,7 +380,7 @@
       position: sticky;
       top: 62px;
       height: calc(100vh - 62px);
-      overflow-y: auto;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
     }
     .nav-category-title {
       font-family: var(--font-display);
@@ -643,7 +643,7 @@
       background: rgba(6, 10, 16, 0.96);
       border-top: 1px solid var(--border-cyan);
       backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       padding: 14px 32px;
       display: flex;
       align-items: center;
@@ -1877,8 +1877,8 @@
       const defaultPreview = item ? (item.url || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80') : 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80';
 
       const modalHtml = `
-        <div id="adminGalleryModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
-          <div style="background: #0d1424; border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 24px; max-width: 580px; width: 100%; box-shadow: 0 0 35px rgba(0,229,255,0.25); max-height: 90vh; overflow-y: auto;">
+        <div id="adminGalleryModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+          <div style="background: #0d1424; border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 24px; max-width: 580px; width: 100%; box-shadow: 0 0 35px rgba(0,229,255,0.25); max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
               <h3 style="color: #fff; font-size: 16px; font-weight: 800; font-family: var(--font-display);">
@@ -2209,7 +2209,7 @@ Revisa la consola para más detalles.`);
       let item = videoId ? APP_CONFIG.videos.find(v => v.id === videoId) : null;
 
       const modalHtml = `
-        <div id="adminVideoModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div id="adminVideoModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
           <div style="background: #0d1424; border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 24px; max-width: 540px; width: 100%; box-shadow: 0 0 35px rgba(0,229,255,0.25);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
               <h3 style="color: #fff; font-size: 16px; font-weight: 800; font-family: var(--font-display);">${item ? '✏️ EDITAR VIDEO TÁCTICO' : '🎬 AÑADIR NUEVO VIDEO'}</h3>
@@ -2639,7 +2639,7 @@ Revisa la consola para más detalles.`);
     // Modal para agregar foto a la galería desde dispositivo o URL
     function promptAddGalleryPhoto() {
       const modalHtml = `
-        <div id="addPhotoModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div id="addPhotoModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
           <div style="background: #0d1424; border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 24px; max-width: 480px; width: 100%; box-shadow: 0 0 30px rgba(0,229,255,0.25);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
               <h3 style="color: #fff; font-size: 16px; font-weight: 800; font-family: var(--font-display);">📸 AÑADIR FOTO A LA GALERÍA</h3>
