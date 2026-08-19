@@ -1341,7 +1341,128 @@
 
   <!-- Script Engine -->
   <script>
-    const STORAGE_KEY = 'HT_CUSTOM_CONFIG_V2';
+    const STORAGE_KEY = 'HT_OWNER_CONFIG_V2';
+    const DB_NAME = 'HappyTacticalMediaDB';
+    const DB_STORE = 'images';
+    const SYNC_CHANNEL_NAME = 'happy_tactical_sync';
+
+    let syncChannel = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+        syncChannel.onmessage = async (e) => {
+          if (e.data) {
+            await loadConfig();
+          }
+        };
+      }
+    } catch(e) {}
+
+    window.addEventListener('storage', async (e) => {
+      if (e.key === STORAGE_KEY || e.key === 'HT_CUSTOM_CONFIG_V2' || e.key === 'HT_CONFIG_PROD_V3') {
+        await loadConfig();
+      }
+    });
+
+    function getDB() {
+      return new Promise((resolve) => {
+        if (!window.indexedDB) { resolve(null); return; }
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(DB_STORE)) {
+            db.createObjectStore(DB_STORE);
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = () => resolve(null);
+        req.onblocked = () => resolve(null);
+      });
+    }
+
+    async function saveImageToDB(key, data) {
+      try {
+        const db = await getDB();
+        if (!db) return false;
+        return new Promise((resolve) => {
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          const store = tx.objectStore(DB_STORE);
+          store.put(data, key);
+          tx.oncomplete = () => {
+            if (syncChannel) {
+              try { syncChannel.postMessage({ type: 'image_updated', key: key }); } catch(e) {}
+            }
+            resolve(true);
+          };
+          tx.onerror = () => resolve(false);
+          tx.onabort = () => resolve(false);
+        });
+      } catch (err) {
+        console.warn('DB save error', err);
+        return false;
+      }
+    }
+
+    async function getImageFromDB(key) {
+      try {
+        const db = await getDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          const tx = db.transaction(DB_STORE, 'readonly');
+          const store = tx.objectStore(DB_STORE);
+          const req = store.get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function compressImageFile(file, slotKey = '') {
+      return new Promise((resolve, reject) => {
+        const isLogo = slotKey === 'logo';
+        const maxDimension = isLogo ? 600 : 1400;
+        const quality = isLogo ? 0.92 : 0.85;
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDimension || h > maxDimension) {
+              if (w > h) {
+                h = Math.round((h * maxDimension) / w);
+                w = maxDimension;
+              } else {
+                w = Math.round((w * maxDimension) / h);
+                h = maxDimension;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+
+            if (isLogo) {
+              ctx.clearRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              resolve(canvas.toDataURL('image/png'));
+            } else {
+              ctx.fillStyle = '#07090f';
+              ctx.fillRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            }
+          };
+          img.onerror = () => reject(new Error('Error al decodificar imagen'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Error al leer archivo'));
+        reader.readAsDataURL(file);
+      });
+    }
 
     const DEFAULT_CONFIG = {
       user: 'admin',
@@ -1487,20 +1608,41 @@
     let APP_CONFIG = { ...DEFAULT_CONFIG };
 
     // 1. CARGA DE CONFIGURACIÓN
-    function loadConfig() {
+    async function loadConfig() {
       try {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        let saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          saved = localStorage.getItem('HT_CUSTOM_CONFIG_V2') || localStorage.getItem('HT_CONFIG_PROD_V3');
+          if (saved) {
+            localStorage.setItem(STORAGE_KEY, saved);
+          }
+        }
         if (saved) {
           APP_CONFIG = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
         }
       } catch (e) {
         console.error('Error cargando configuración:', e);
       }
+
+      // Load custom images from IndexedDB
+      const slots = ['logo', 'hero', 'about', 'c1', 'c2', 'c3'];
+      if (!APP_CONFIG.images) APP_CONFIG.images = {};
+      for (const slot of slots) {
+        const customSrc = await getImageFromDB(slot);
+        if (customSrc) {
+          APP_CONFIG.images[slot] = customSrc;
+        }
+      }
+
       populateForm();
     }
 
     // 2. POBLAR FORMULARIO
     function populateForm() {
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined) el.value = val;
+      };
 
       if (APP_CONFIG.images) {
         if (APP_CONFIG.images.logo) { setVal('input_img_logo', APP_CONFIG.images.logo); updateImagePreview('preview_logo', APP_CONFIG.images.logo); }
@@ -1510,11 +1652,6 @@
         if (APP_CONFIG.images.c2) { setVal('input_img_c2', APP_CONFIG.images.c2); updateImagePreview('preview_c2', APP_CONFIG.images.c2); }
         if (APP_CONFIG.images.c3) { setVal('input_img_c3', APP_CONFIG.images.c3); updateImagePreview('preview_c3', APP_CONFIG.images.c3); }
       }
-
-      const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el && val !== undefined) el.value = val;
-      };
 
       setVal('cfgWhatsApp', APP_CONFIG.whatsApp);
       setVal('cfgWhatsAppDisplay', APP_CONFIG.whatsAppDisplay);
@@ -1761,6 +1898,9 @@
 
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
+        if (syncChannel) {
+          try { syncChannel.postMessage({ type: 'config_updated' }); } catch(e) {}
+        }
         const userDisplay = document.getElementById('displayUsername');
         if (userDisplay) userDisplay.textContent = APP_CONFIG.user;
         showToast('¡Cambios guardados y sincronizados con index.html!');
@@ -1874,9 +2014,9 @@
   
 
     // ========================================================================
-    // GESTOR DE SUBIDA DE IMÁGENES DESDE GALERÍA / DISPOSITIVO (FILEREADER)
+    // GESTOR UNIFICADO DE SUBIDA Y GUARDADO DE FOTOS
     // ========================================================================
-    function handleImageFileUpload(event, previewImgId, targetInputId) {
+    async function handleImageFileUpload(event, previewImgId, targetInputId, slotKey = '') {
       const file = event.target.files[0];
       if (!file) return;
 
@@ -1885,18 +2025,37 @@
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const base64Data = e.target.result;
+      showToast('⏳ Optimizando y guardando imagen...');
+      try {
+        if (!slotKey) {
+          if (targetInputId.includes('logo')) slotKey = 'logo';
+          else if (targetInputId.includes('hero')) slotKey = 'hero';
+          else if (targetInputId.includes('about')) slotKey = 'about';
+          else if (targetInputId.includes('c1')) slotKey = 'c1';
+          else if (targetInputId.includes('c2')) slotKey = 'c2';
+          else if (targetInputId.includes('c3')) slotKey = 'c3';
+        }
+
+        const base64Data = await compressImageFile(file, slotKey);
         const previewEl = document.getElementById(previewImgId);
         const inputEl = document.getElementById(targetInputId);
-        
+
         if (previewEl) previewEl.src = base64Data;
         if (inputEl) inputEl.value = base64Data;
-        
-        showToast('Foto cargada desde tu dispositivo.');
-      };
-      reader.readAsDataURL(file);
+
+        if (slotKey) {
+          if (!APP_CONFIG.images) APP_CONFIG.images = {};
+          APP_CONFIG.images[slotKey] = base64Data;
+          await saveImageToDB(slotKey, base64Data);
+          saveAllChanges(false);
+          showToast(`✓ Foto de ${slotKey.toUpperCase()} guardada exitosamente.`);
+        } else {
+          showToast('✓ Foto cargada.');
+        }
+      } catch (err) {
+        console.error('Error procesando imagen', err);
+        showToast('❌ Error al procesar la imagen.');
+      }
     }
 
     function updateImagePreview(previewImgId, url) {
@@ -1906,44 +2065,27 @@
       }
     }
 
-    function saveAllImagesConfig() {
+    async function saveAllImagesConfig() {
       const getVal = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-      const imgData = {
+      const slots = {
         logo:  getVal('input_img_logo'),
         hero:  getVal('input_img_hero'),
         about: getVal('input_img_about'),
         c1:    getVal('input_img_c1'),
         c2:    getVal('input_img_c2'),
-        c3:    getVal('input_img_c3'),
+        c3:    getVal('input_img_c3')
       };
-      
-      // Save image data to IndexedDB (bypasses 5MB localStorage limit)
-      const request = indexedDB.open('HappyTacticalMedia', 1);
-      request.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains('images')) db.createObjectStore('images');
-      };
-      request.onsuccess = (e) => {
-        const db = e.target.result;
-        const tx = db.transaction('images', 'readwrite');
-        const store = tx.objectStore('images');
-        Object.entries(imgData).forEach(([key, val]) => { if (val) store.put(val, key); });
-        tx.oncomplete = () => {
-          // Also update APP_CONFIG.images for text fields that use localStorage safely (URLs only, not base64)
+
+      showToast('⏳ Guardando fotos en base de datos...');
+      for (const [key, val] of Object.entries(slots)) {
+        if (val) {
+          await saveImageToDB(key, val);
           if (!APP_CONFIG.images) APP_CONFIG.images = {};
-          Object.entries(imgData).forEach(([key, val]) => {
-            // Only store in localStorage if it's a URL (not base64) to avoid quota errors
-            if (val && !val.startsWith('data:')) APP_CONFIG.images[key] = val;
-          });
-          try {
-            localStorage.setItem('HT_CONFIG_PROD_V3', JSON.stringify(APP_CONFIG));
-          } catch(e) { /* quota exceeded - IndexedDB already saved */ }
-          window.dispatchEvent(new CustomEvent('ht_config_updated'));
-          showToast('✓ Fotos guardadas correctamente (incluyendo imágenes grandes).');
-        };
-        tx.onerror = () => showToast('❌ Error al guardar. Intenta con una imagen más pequeña.');
-      };
-      request.onerror = () => showToast('❌ No se pudo acceder al almacenamiento.');
+          APP_CONFIG.images[key] = val;
+        }
+      }
+      saveAllChanges(false);
+      showToast('✓ Todas las fotos han sido guardadas y sincronizadas.');
     }
 
     // Modal para agregar foto a la galería desde dispositivo o URL
@@ -1993,8 +2135,8 @@
         return;
       }
 
-      if (!APP_CONFIG.gallery) APP_CONFIG.gallery = [];
-      APP_CONFIG.gallery.push({
+      if (!APP_CONFIG.galleryImages) APP_CONFIG.galleryImages = [];
+      APP_CONFIG.galleryImages.push({
         id: 'gal-' + Date.now(),
         title: title,
         badge: badge,
@@ -2002,8 +2144,8 @@
         location: 'Happy Tactical - Sede Lima'
       });
 
-      saveConfiguration();
-      renderGalleryAdminCards();
+      saveAllChanges(false);
+      renderGalleryList();
       const modal = document.getElementById('addPhotoModal');
       if (modal) modal.remove();
       showToast('✓ Nueva foto agregada a la galería.');

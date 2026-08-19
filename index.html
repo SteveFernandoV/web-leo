@@ -150,21 +150,15 @@
       transition: transform 0.08s linear;
     }
 
-    /* Clean Native Tactical Cursor Styling */
+    /* Clean Base Cursor Styling */
     html, body {
       cursor: default;
     }
-    a, button, [role="button"], .filter-btn, .course-card, .gallery-stream-item, .tactical-video-card, .spotlight-media-wrap, .schedule-item, .interactive-card, .owner-cat-btn, .modal-close-btn {
+    a, button, [role="button"], select, .btn, .interactive-card, .course-card, .gallery-stream-item, .tactical-video-card, .spotlight-media-wrap, .schedule-item, .owner-cat-btn, .modal-close-btn, .gallery-hud-btn, .filter-btn, .switch-label, .switch-input, input[type=range].form-range {
       cursor: pointer;
     }
     input, textarea, [contenteditable="true"] {
       cursor: text;
-    }
-    select {
-      cursor: pointer;
-    }
-    #tacticalCursor, #tacticalCursorDot, #tacticalCursorBadge {
-      display: none !important;
     }
 
     /* Tactical Accessible Focus Indicators */
@@ -2804,150 +2798,217 @@
   
 
     /* ========================================================================
-       CURSOR TÁCTICO HUD ANIMADO — UNA SOLA IMPLEMENTACIÓN (DESKTOP ONLY)
+       SISTEMA ÚNICO DE CURSOR TÁCTICO HUD DE ALTA PRECISIÓN (DESKTOP ONLY)
        ======================================================================== */
     @media (hover: hover) and (pointer: fine) {
-      body { cursor: none !important; }
-      a, button, [role="button"], select, .btn, .interactive-card, .gallery-stream-item { cursor: none !important; }
-      input, textarea { cursor: text !important; }
+      /* Ocultar cursor nativo globalmente cuando el cursor táctico esté activo */
+      html.hud-cursor-enabled,
+      html.hud-cursor-enabled body,
+      html.hud-cursor-enabled body * {
+        cursor: none !important;
+      }
+      /* Excepciones para campos de texto nativos */
+      html.hud-cursor-enabled input,
+      html.hud-cursor-enabled textarea,
+      html.hud-cursor-enabled [contenteditable="true"] {
+        cursor: text !important;
+      }
+      /* Excepciones dentro de modales Top-Layer */
+      dialog[open],
+      dialog[open] * {
+        cursor: default !important;
+      }
+      dialog[open] a,
+      dialog[open] button,
+      dialog[open] [role="button"],
+      dialog[open] .btn,
+      dialog[open] .modal-close-btn {
+        cursor: pointer !important;
+      }
+      dialog[open] input,
+      dialog[open] textarea {
+        cursor: text !important;
+      }
 
-      /* ── Punto Central (sigue al mouse 1:1) ── */
-      .hud-cursor-dot {
+      .hud-cursor-dot,
+      .hud-cursor-ring {
         position: fixed;
-        top: 0; left: 0;
-        width: 8px; height: 8px;
+        top: 0;
+        left: 0;
+        pointer-events: none !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        opacity: 0;
+        will-change: transform, opacity;
+        z-index: 2147483647;
+      }
+
+      /* ── 1. Punto Central Magenta/Cyan (8px con núcleo 4px) ── */
+      .hud-cursor-dot {
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         background: #00e5ff;
-        pointer-events: none !important;
-        z-index: 2147483647;
-        box-shadow: 0 0 0 1.5px rgba(0,229,255,0.3), 0 0 10px #00e5ff, 0 0 4px #fff;
-        opacity: 0;
-        will-change: transform;
-        transition: opacity 0.25s ease;
-        animation: dotPulse 2s ease-in-out infinite;
-        transform: translate3d(-50vw, -50vh, 0);
+        box-shadow: 0 0 0 1.5px rgba(0, 229, 255, 0.4), 0 0 12px #00e5ff, 0 0 4px #fff;
+        transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
+        transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
       }
-      /* Núcleo magenta interno */
       .hud-cursor-dot::after {
         content: '';
         position: absolute;
-        top: 50%; left: 50%;
-        width: 3px; height: 3px;
-        margin: -1.5px 0 0 -1.5px;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        transform: translate(-50%, -50%);
         background: #ff007f;
         border-radius: 50%;
-        box-shadow: 0 0 4px #ff007f;
-        animation: dotCorePulse 2s ease-in-out infinite;
+        box-shadow: 0 0 6px #ff007f;
       }
-      .hud-cursor-dot.visible { opacity: 1; }
-      .hud-cursor-dot.text-mode { opacity: 0.2; animation: none; }
+      .hud-cursor-dot.visible {
+        opacity: 1;
+      }
+      .hud-cursor-dot.text-mode {
+        opacity: 0.15;
+      }
 
-      /* ── Aro Exterior (sigue con lerp suave) ── */
+      /* ── 2. Aro Táctico HUD con Retícula Ortogonal y Corchetes ── */
       .hud-cursor-ring {
-        position: fixed;
-        top: 0; left: 0;
-        width: 38px; height: 38px;
-        border: 1.5px solid rgba(0, 229, 255, 0.55);
-        border-radius: 50%;
-        pointer-events: none !important;
-        z-index: 2147483646;
-        opacity: 0;
+        width: 38px;
+        height: 38px;
         box-sizing: border-box;
-        will-change: transform, width, height;
+        border: 1.5px solid rgba(0, 229, 255, 0.65);
+        border-radius: 50%;
+        transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.25), 0 0 16px rgba(0, 229, 255, 0.25);
         transition:
-          width  0.28s cubic-bezier(0.16, 1, 0.3, 1),
-          height 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-          border-color 0.25s ease,
-          box-shadow 0.25s ease,
-          opacity 0.25s ease;
-        transform: translate3d(-50vw, -50vh, 0);
+          opacity 0.2s ease,
+          border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+          background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+          box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .hud-cursor-ring.visible { opacity: 1; }
+      .hud-cursor-ring.visible {
+        opacity: 1;
+      }
 
-      /* Segmentos del aro: gaps para efecto de dashes rotatorios */
-      .hud-cursor-ring::before,
+      /* Segmento punteado giratorio */
+      .hud-cursor-ring::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        border: 1.5px dashed rgba(0, 229, 255, 0.4);
+        animation: ringSpinDash 6s linear infinite;
+        pointer-events: none;
+      }
+
+      /* Retícula ortogonal HUD */
       .hud-cursor-ring::after {
         content: '';
         position: absolute;
-        inset: -1.5px;
+        inset: -4px;
         border-radius: 50%;
+        border: 1px solid rgba(0, 229, 255, 0.15);
         pointer-events: none;
       }
-      .hud-cursor-ring::before {
-        border: 1.5px dashed rgba(0, 229, 255, 0.35);
-        animation: ringSpinDash 3s linear infinite;
-        transform-origin: center;
-      }
 
-      /* ── Corchetes de esquina ── */
+      /* Corchetes tácticos en 4 esquinas */
       .hud-cursor-ring .ring-bracket {
         position: absolute;
-        width: 7px; height: 7px;
+        width: 7px;
+        height: 7px;
         border-color: #00e5ff;
         border-style: solid;
         pointer-events: none;
-        opacity: 0.85;
-        transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        opacity: 0.9;
+        transition: border-color 0.22s ease, transform 0.22s ease, opacity 0.22s ease;
       }
-      .hud-cursor-ring .ring-bracket.top-left    { top: -2px;    left: -2px;    border-width: 2px 0 0 2px; }
-      .hud-cursor-ring .ring-bracket.top-right   { top: -2px;    right: -2px;   border-width: 2px 2px 0 0; }
-      .hud-cursor-ring .ring-bracket.bottom-left { bottom: -2px; left: -2px;    border-width: 0 0 2px 2px; }
-      .hud-cursor-ring .ring-bracket.bottom-right{ bottom: -2px; right: -2px;   border-width: 0 2px 2px 0; }
+      .hud-cursor-ring .ring-bracket.top-left     { top: -2px;    left: -2px;    border-width: 2px 0 0 2px; }
+      .hud-cursor-ring .ring-bracket.top-right    { top: -2px;    right: -2px;   border-width: 2px 2px 0 0; }
+      .hud-cursor-ring .ring-bracket.bottom-left  { bottom: -2px; left: -2px;    border-width: 0 0 2px 2px; }
+      .hud-cursor-ring .ring-bracket.bottom-right { bottom: -2px; right: -2px;   border-width: 0 2px 2px 0; }
 
-      /* ── Estado Lock-On (hover sobre botones) ── */
+      /* Badge de telemetría táctica */
+      .hud-cursor-ring .ring-hud-badge {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(7px);
+        font-family: var(--font-display, 'Oxanium', monospace);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: #00e5ff;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        background: rgba(3, 6, 12, 0.92);
+        padding: 2px 6px;
+        border-radius: 3px;
+        border: 1px solid rgba(0, 229, 255, 0.5);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+        transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      }
+
+      /* ── 3. Estado Lock-On (Hover Interactivo) ── */
       .hud-cursor-ring.active-lock {
-        width: 54px; height: 54px;
-        border: 2px solid rgba(0, 229, 255, 1);
-        box-shadow: 0 0 18px rgba(0,229,255,0.55), inset 0 0 10px rgba(0,229,255,0.18);
+        border-color: #ff007f;
+        background-color: rgba(255, 0, 127, 0.08);
+        box-shadow: 0 0 0 1px rgba(255, 0, 127, 0.4), 0 0 22px rgba(255, 0, 127, 0.35);
       }
       .hud-cursor-ring.active-lock::before {
-        border-color: rgba(255, 0, 127, 0.45);
-        animation: ringRotateReverse 0.9s linear infinite;
+        border-color: rgba(255, 0, 127, 0.5);
+        animation-duration: 2.5s;
       }
       .hud-cursor-ring.active-lock .ring-bracket {
         border-color: #ff007f;
         box-shadow: 0 0 6px #ff007f;
-        width: 9px; height: 9px;
         opacity: 1;
       }
-
-      /* ── Clic: micro-compresión ── */
-      .hud-cursor-ring.clicking {
-        transform: scale(0.78) !important;
-        border-color: #ff007f !important;
-        box-shadow: 0 0 24px rgba(255,0,127,0.75) !important;
-        transition: transform 0.08s ease, border-color 0.08s ease, box-shadow 0.08s ease !important;
+      .hud-cursor-ring.active-lock .ring-hud-badge {
+        opacity: 1;
+        color: #ff007f;
+        border-color: rgba(255, 0, 127, 0.6);
+        transform: translateX(-50%) translateY(9px);
       }
 
-      /* ── Modo texto: ocultar aro ── */
-      .hud-cursor-ring.text-mode { opacity: 0 !important; animation: none !important; }
+      /* ── 4. Estado Disparo / Clic ── */
+      .hud-cursor-ring.clicking {
+        border-color: #ffffff;
+        background-color: rgba(0, 229, 255, 0.25);
+        box-shadow: 0 0 0 1px #ffffff, 0 0 24px rgba(0, 229, 255, 0.7);
+      }
+      .hud-cursor-ring.clicking .ring-bracket {
+        border-color: #ffffff;
+      }
+
+      /* ── 5. Modo Entrada de Texto ── */
+      .hud-cursor-ring.text-mode {
+        opacity: 0 !important;
+        animation: none !important;
+      }
     }
 
-    /* Móvil / Touch: invisible y desactivado */
-    @media (pointer: coarse), (hover: none) {
-      .hud-cursor-dot, .hud-cursor-ring { display: none !important; }
-      body { cursor: auto !important; }
+    /* Móvil / Touch: Completamente invisible y desactivado */
+    @media (max-width: 900px), (pointer: coarse), (hover: none) {
+      .hud-cursor-dot,
+      .hud-cursor-ring {
+        display: none !important;
+      }
+      html.hud-cursor-enabled,
+      html.hud-cursor-enabled body,
+      html.hud-cursor-enabled body * {
+        cursor: auto !important;
+      }
     }
 
-    /* Keyframes de animación del cursor */
-    @keyframes ringSpinCW {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
-    @keyframes ringRotateReverse {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(-360deg); }
-    }
     @keyframes ringSpinDash {
       from { transform: rotate(0deg); }
       to   { transform: rotate(-360deg); }
     }
-    @keyframes dotPulse {
-      0%, 100% { box-shadow: 0 0 0 1.5px rgba(0,229,255,0.3), 0 0 10px #00e5ff, 0 0 4px #fff; }
-      50%       { box-shadow: 0 0 0 3px rgba(0,229,255,0.15), 0 0 18px #00e5ff, 0 0 8px #fff; }
-    }
-    @keyframes dotCorePulse {
-      0%, 100% { transform: scale(1);   opacity: 1; }
       50%       { transform: scale(1.5); opacity: 0.7; }
     }
     
@@ -4390,9 +4451,29 @@
 
     let activeCalItem = null;
 
-    // --- IndexedDB ---
-    const DB_NAME = 'HappyTacticalDB';
-    const DB_STORE = 'custom_images';
+    // --- Unified Media Database Engine (IndexedDB + Broadcast Sync) ---
+    const DB_NAME = 'HappyTacticalMediaDB';
+    const DB_STORE = 'images';
+    const SYNC_CHANNEL_NAME = 'happy_tactical_sync';
+    const STORAGE_KEY = 'HT_OWNER_CONFIG_V2';
+
+    let syncChannel = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+        syncChannel.onmessage = async (e) => {
+          if (e.data && (e.data.type === 'image_updated' || e.data.type === 'config_updated' || e.data.type === 'image_deleted')) {
+            await loadSavedConfig();
+          }
+        };
+      }
+    } catch (e) {}
+
+    window.addEventListener('storage', async (e) => {
+      if (e.key === STORAGE_KEY || e.key === 'HT_CUSTOM_CONFIG_V2' || e.key === 'HT_CONFIG_PROD_V3') {
+        await loadSavedConfig();
+      }
+    });
 
     function getDB() {
       return new Promise((resolve) => {
@@ -4401,22 +4482,35 @@
         req.onupgradeneeded = (e) => {
           const db = e.target.result;
           if (!db.objectStoreNames.contains(DB_STORE)) {
-            db.createObjectStore(DB_STORE, { keyPath: 'key' });
+            db.createObjectStore(DB_STORE);
           }
         };
         req.onsuccess = (e) => resolve(e.target.result);
         req.onerror = () => resolve(null);
+        req.onblocked = () => resolve(null);
       });
     }
 
-    async function saveImageToDB(key, base64) {
+    async function saveImageToDB(key, data) {
       try {
         const db = await getDB();
-        if (!db) return;
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        tx.objectStore(DB_STORE).put({ key: key, data: base64 });
+        if (!db) return false;
+        return new Promise((resolve) => {
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          const store = tx.objectStore(DB_STORE);
+          store.put(data, key);
+          tx.oncomplete = () => {
+            if (syncChannel) {
+              try { syncChannel.postMessage({ type: 'image_updated', key: key }); } catch (e) {}
+            }
+            resolve(true);
+          };
+          tx.onerror = () => resolve(false);
+          tx.onabort = () => resolve(false);
+        });
       } catch (err) {
-        console.warn('IndexedDB save warning', err);
+        console.warn('DB save error', err);
+        return false;
       }
     }
 
@@ -4426,8 +4520,9 @@
         if (!db) return null;
         return new Promise((resolve) => {
           const tx = db.transaction(DB_STORE, 'readonly');
-          const req = tx.objectStore(DB_STORE).get(key);
-          req.onsuccess = () => resolve(req.result ? req.result.data : null);
+          const store = tx.objectStore(DB_STORE);
+          const req = store.get(key);
+          req.onsuccess = () => resolve(req.result || null);
           req.onerror = () => resolve(null);
         });
       } catch (err) {
@@ -4438,17 +4533,31 @@
     async function deleteImageFromDB(key) {
       try {
         const db = await getDB();
-        if (!db) return;
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        tx.objectStore(DB_STORE).delete(key);
+        if (!db) return false;
+        return new Promise((resolve) => {
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          const store = tx.objectStore(DB_STORE);
+          store.delete(key);
+          tx.oncomplete = () => {
+            if (syncChannel) {
+              try { syncChannel.postMessage({ type: 'image_deleted', key: key }); } catch (e) {}
+            }
+            resolve(true);
+          };
+          tx.onerror = () => resolve(false);
+        });
       } catch (err) {
-        console.warn('IndexedDB delete error', err);
+        return false;
       }
     }
 
-    function compressImageFile(file, maxDimension = 1400, quality = 0.86) {
+    function compressImageFile(file, slotKey = '') {
       return new Promise((resolve, reject) => {
+        const isLogo = slotKey === 'logo';
+        const maxDimension = isLogo ? 600 : 1400;
+        const quality = isLogo ? 0.92 : 0.85;
         const reader = new FileReader();
+
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
@@ -4467,9 +4576,17 @@
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-            resolve(canvas.toDataURL(mime, quality));
+
+            if (isLogo) {
+              ctx.clearRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              resolve(canvas.toDataURL('image/png'));
+            } else {
+              ctx.fillStyle = '#07090f';
+              ctx.fillRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            }
           };
           img.onerror = () => reject(new Error('Error al decodificar imagen'));
           img.src = e.target.result;
@@ -4515,10 +4632,16 @@
       else cat.value = 'corporativo';
     }
 
-    // --- Hydration ---
+    // --- Hydration & Synchronization ---
     async function loadSavedConfig() {
       try {
-        const saved = localStorage.getItem('HT_OWNER_CONFIG_V2');
+        let saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          saved = localStorage.getItem('HT_CUSTOM_CONFIG_V2') || localStorage.getItem('HT_CONFIG_PROD_V3');
+          if (saved) {
+            localStorage.setItem(STORAGE_KEY, saved);
+          }
+        }
         if (saved) {
           const parsed = JSON.parse(saved);
           HT_CONFIG = Object.assign({}, DEFAULT_CONFIG, parsed);
@@ -4528,6 +4651,12 @@
           if (parsed.schedule && Array.isArray(parsed.schedule)) {
             HT_CONFIG.schedule = parsed.schedule;
           }
+          if (parsed.galleryImages && Array.isArray(parsed.galleryImages)) {
+            HT_CONFIG.galleryImages = parsed.galleryImages;
+          }
+          if (parsed.videos && Array.isArray(parsed.videos)) {
+            HT_CONFIG.videos = parsed.videos;
+          }
         }
       } catch (e) {
         console.warn('Config load warning', e);
@@ -4535,10 +4664,13 @@
 
       const slots = ['logo', 'hero', 'about', 'c1', 'c2', 'c3'];
       for (const slot of slots) {
-        if (HT_CONFIG.imageMeta[slot] && HT_CONFIG.imageMeta[slot].hasCustom) {
-          const customSrc = await getImageFromDB(slot);
-          if (customSrc) {
-            HT_ACTIVE_IMAGES[slot] = customSrc;
+        const customSrc = await getImageFromDB(slot);
+        if (customSrc) {
+          HT_ACTIVE_IMAGES[slot] = customSrc;
+          if (!HT_CONFIG.imageMeta[slot]) {
+            HT_CONFIG.imageMeta[slot] = { fit: slot === 'logo' ? 'contain' : 'cover', position: slot === 'hero' ? 'right center' : 'center center', scale: 1.0, hasCustom: true };
+          } else {
+            HT_CONFIG.imageMeta[slot].hasCustom = true;
           }
         } else {
           HT_ACTIVE_IMAGES[slot] = DEFAULT_ASSETS[slot];
@@ -4614,7 +4746,7 @@
     }
 
     function applyImagesAndFraming() {
-      const meta = HT_CONFIG.imageMeta;
+      const meta = HT_CONFIG.imageMeta || DEFAULT_CONFIG.imageMeta;
 
       const logoSrc = HT_ACTIVE_IMAGES.logo;
       ['mainNavLogo', 'mainFooterLogo', 'prevImgLogo'].forEach(id => {
@@ -4650,12 +4782,12 @@
       const file = event.target.files[0];
       if (!file) return;
 
-      showToast('⏳ Optimizando y encuadrando imagen...');
+      showToast('⏳ Optimizando y guardando imagen...');
       try {
-        const compressedBase64 = await compressImageFile(file, slotKey === 'logo' ? 600 : 1400, 0.86);
+        const compressedBase64 = await compressImageFile(file, slotKey);
         HT_ACTIVE_IMAGES[slotKey] = compressedBase64;
         if (!HT_CONFIG.imageMeta[slotKey]) {
-          HT_CONFIG.imageMeta[slotKey] = { fit: 'cover', position: 'center center', scale: 1.0, hasCustom: true };
+          HT_CONFIG.imageMeta[slotKey] = { fit: slotKey === 'logo' ? 'contain' : 'cover', position: slotKey === 'hero' ? 'right center' : 'center center', scale: 1.0, hasCustom: true };
         } else {
           HT_CONFIG.imageMeta[slotKey].hasCustom = true;
         }
@@ -4663,7 +4795,7 @@
         await saveImageToDB(slotKey, compressedBase64);
         saveAllOwnerConfig(false);
         applyImagesAndFraming();
-        showToast(`✓ Imagen ${slotKey.toUpperCase()} actualizada`);
+        showToast(`✓ Imagen de ${slotKey.toUpperCase()} guardada exitosamente`);
       } catch (err) {
         console.error('Error procesando imagen', err);
         showToast('Error al procesar la imagen', false);
@@ -4688,6 +4820,7 @@
         if (lblScale) lblScale.textContent = `${HT_CONFIG.imageMeta[slotKey].scale.toFixed(2)}x`;
       }
 
+      saveAllOwnerConfig(false);
       applyImagesAndFraming();
     }
 
@@ -4994,7 +5127,10 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
       }
 
       try {
-        localStorage.setItem('HT_OWNER_CONFIG_V2', JSON.stringify(HT_CONFIG));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(HT_CONFIG));
+        if (syncChannel) {
+          try { syncChannel.postMessage({ type: 'config_updated' }); } catch(e) {}
+        }
         applyConfigToDOM();
         if (showFeedback) showToast('✓ CONFIGURACIÓN GUARDADA CON ÉXITO');
       } catch (e) {
@@ -5938,110 +6074,176 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
   
 
     // ========================================================================
-    // MOTOR DEFINITIVO DE CURSOR TÁCTICO HUD (SOLO ESCRITORIO CON NATIVE HOVER)
+    // MOTOR DEFINITIVO DE CURSOR TÁCTICO HUD (RAF 120Hz + Sincronía Perfecta)
     // ========================================================================
-    document.addEventListener("DOMContentLoaded", function() {
     (function initHudCursorEngine() {
+      // Verificar si es un dispositivo con puntero fino (Desktop/Mouse)
       const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-      if (!isFinePointer) return; // En móvil o pantallas táctiles no ejecutar nada
+      if (!isFinePointer) return;
 
       const dot = document.getElementById('hudCursorDot');
       const ring = document.getElementById('hudCursorRing');
+      const badge = document.getElementById('hudCursorBadge');
       if (!dot || !ring) return;
 
-      let mouseX = window.innerWidth / 2;
-      let mouseY = window.innerHeight / 2;
-      let ringX = mouseX;
-      let ringY = mouseY;
+      let clientX = window.innerWidth / 2;
+      let clientY = window.innerHeight / 2;
+      let ringX = clientX;
+      let ringY = clientY;
       let isVisible = false;
-      let isRafRunning = false;
+      let isHovered = false;
+      let isMouseDown = false;
+      let isTextMode = false;
 
-      // Tamaños del cursor para centrado preciso
-      const DOT_R  = 4;  // radio real del punto (8px / 2)
-      const RING_R = 19; // radio del aro en estado normal (38px / 2)
-      const LOCK_R = 27; // radio del aro en estado lock-on (54px / 2)
+      // Activar clase global para ocultar cursor nativo limpiamente en desktop
+      document.documentElement.classList.add('hud-cursor-enabled');
 
-      // Actualizar posición del cursor instantáneamente
+      // Bucle RAF permanente sincronizado a la tasa de refresco nativa (60/120/144Hz)
+      function renderLoop() {
+        if (isVisible) {
+          // El punto sigue al mouse instantáneamente con 0 latencia
+          dot.style.transform = `translate3d(${clientX}px, ${clientY}px, 0) translate(-50%, -50%)`;
+
+          // El aro exterior sigue con interpolación táctica lerp (0.22)
+          ringX += (clientX - ringX) * 0.22;
+          ringY += (clientY - ringY) * 0.22;
+
+          // Escala: micro-compresión en clic (0.82) o expansión en hover (1.35)
+          const scale = isMouseDown ? 0.82 : (isHovered ? 1.35 : 1.0);
+          ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%) scale(${scale})`;
+        }
+        requestAnimationFrame(renderLoop);
+      }
+      requestAnimationFrame(renderLoop);
+
       function onPointerMove(e) {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
+        if (e.pointerType === 'touch') {
+          if (isVisible) {
+            isVisible = false;
+            dot.classList.remove('visible');
+            ring.classList.remove('visible');
+          }
+          return;
+        }
+
+        clientX = e.clientX;
+        clientY = e.clientY;
 
         if (!isVisible) {
           isVisible = true;
+          ringX = clientX;
+          ringY = clientY;
           dot.classList.add('visible');
           ring.classList.add('visible');
-          ringX = mouseX;
-          ringY = mouseY;
-        }
-
-        // El punto sigue al mouse — centrado con offset negativo de su propio radio
-        dot.style.transform = `translate3d(${mouseX - DOT_R}px, ${mouseY - DOT_R}px, 0)`;
-
-        if (!isRafRunning) {
-          isRafRunning = true;
-          requestAnimationFrame(updateRingPosition);
         }
       }
 
-      // Interpolación suave del aro con resorte (lerp = 0.18)
-      function updateRingPosition() {
-        ringX += (mouseX - ringX) * 0.18;
-        ringY += (mouseY - ringY) * 0.18;
+      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      window.addEventListener('mousemove', onPointerMove, { passive: true });
 
-        // Detectar si está en modo lock para ajustar el radio de centrado
-        const r = ring.classList.contains('active-lock') ? LOCK_R : RING_R;
-        ring.style.transform = `translate3d(${ringX - r}px, ${ringY - r}px, 0)`;
+      // Clic: compresión reactiva
+      window.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'touch') return;
+        isMouseDown = true;
+        ring.classList.add('clicking');
+      }, { passive: true });
 
-        const dist = Math.hypot(mouseX - ringX, mouseY - ringY);
-        if (dist > 0.08 || isVisible) {
-          requestAnimationFrame(updateRingPosition);
-        } else {
-          isRafRunning = false;
-        }
-      }
+      window.addEventListener('pointerup', () => {
+        isMouseDown = false;
+        ring.classList.remove('clicking');
+      }, { passive: true });
 
-      // Detección 100% NATIVA de entrada y salida sobre elementos interactivos
-      document.addEventListener('pointerover', (e) => {
+      // Selector integral de elementos interactivos de toda la web
+      const interactiveSelector = [
+        'a',
+        'button',
+        '.btn',
+        '[role="button"]',
+        'select',
+        'summary',
+        '[tabindex="0"]',
+        '.course-card',
+        '.tactical-video-card',
+        '.gallery-stream-item',
+        '.spotlight-media-wrap',
+        '.schedule-item',
+        '.interactive-card',
+        '.filter-btn',
+        '.owner-cat-btn',
+        '.modal-close-btn',
+        '.gallery-hud-btn',
+        '.switch-label',
+        '.switch-input',
+        '.accordion-header',
+        '.faq-header',
+        '.nav-link',
+        '.cert-badge',
+        '[data-action]'
+      ].join(', ');
+
+      const textSelector = 'input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]';
+
+      // Delegación inteligente ultra-eficiente
+      document.addEventListener('mouseover', (e) => {
         const target = e.target;
-        if (!target) return;
+        if (!target || !(target instanceof Element)) return;
 
-        // Verificar si es un campo de texto
-        if (target.matches('input, textarea, [contenteditable="true"]')) {
+        // 1. Detectar campos de texto
+        const textTarget = target.closest(textSelector);
+        if (textTarget) {
+          isTextMode = true;
           dot.classList.add('text-mode');
           ring.classList.add('text-mode');
           return;
         }
 
-        // Verificar si es un botón o elemento interactivo
-        const interactive = target.closest('a, button, .btn, [role="button"], select, .gallery-stream-item, .interactive-card, .accordion-header, .faq-header');
-        if (interactive) {
-          ring.classList.add('active-lock');
-          dot.classList.remove('text-mode');
-          ring.classList.remove('text-mode');
+        // 2. Detectar elementos interactivos
+        const interactiveTarget = target.closest(interactiveSelector);
+        if (interactiveTarget) {
+          if (!isHovered) {
+            isHovered = true;
+            ring.classList.add('active-lock');
+            dot.classList.remove('text-mode');
+            ring.classList.remove('text-mode');
+          }
+
+          if (badge) {
+            let label = '[OBJETIVO]';
+            if (interactiveTarget.matches('a[href^="tel:"], a[href*="wa.me"], a[href*="whatsapp"]')) label = '[CONTACTAR]';
+            else if (interactiveTarget.matches('a[href^="#"]')) label = '[NAVEGAR]';
+            else if (interactiveTarget.matches('.tactical-video-card, .spotlight-media-wrap, [data-action="play"]')) label = '[VER VIDEO]';
+            else if (interactiveTarget.matches('.gallery-stream-item, .gallery-hud-btn')) label = '[AMPLIAR]';
+            else if (interactiveTarget.matches('.course-card, [onclick*="openCourseModal"]')) label = '[VER CURSO]';
+            else if (interactiveTarget.matches('.schedule-item, [onclick*="openCalSyncModal"]')) label = '[CALENDARIO]';
+            else if (interactiveTarget.matches('.filter-btn, .owner-cat-btn')) label = '[FILTRAR]';
+            else if (interactiveTarget.matches('.modal-close-btn, [data-action="close"]')) label = '[CERRAR]';
+            else if (interactiveTarget.matches('button, .btn')) label = '[ACCEDER]';
+            badge.textContent = label;
+          }
         }
       }, { passive: true });
 
-      document.addEventListener('pointerout', (e) => {
+      document.addEventListener('mouseout', (e) => {
         const related = e.relatedTarget;
-        if (!related || !related.closest('a, button, .btn, [role="button"], select, .gallery-stream-item, .interactive-card, .accordion-header, .faq-header')) {
-          ring.classList.remove('active-lock');
-        }
-        if (!related || !related.matches('input, textarea, [contenteditable="true"]')) {
+        const currentTarget = e.target;
+        if (!currentTarget || !(currentTarget instanceof Element)) return;
+
+        // Si salimos de un campo de texto y el nuevo elemento no es de texto
+        if (isTextMode && (!related || !(related instanceof Element) || !related.closest(textSelector))) {
+          isTextMode = false;
           dot.classList.remove('text-mode');
           ring.classList.remove('text-mode');
         }
+
+        // Si salimos de un elemento interactivo y el nuevo elemento no es interactivo
+        if (isHovered && (!related || !(related instanceof Element) || !related.closest(interactiveSelector))) {
+          isHovered = false;
+          ring.classList.remove('active-lock');
+          if (badge) badge.textContent = '[TARGET]';
+        }
       }, { passive: true });
 
-      // Feedback visual táctico al hacer clic
-      document.addEventListener('pointerdown', () => {
-        ring.classList.add('clicking');
-      }, { passive: true });
-
-      document.addEventListener('pointerup', () => {
-        ring.classList.remove('clicking');
-      }, { passive: true });
-
-      // Gestión de salida de la ventana
+      // Gestión de salida y entrada a la ventana
       document.addEventListener('mouseleave', () => {
         isVisible = false;
         dot.classList.remove('visible');
@@ -6054,20 +6256,30 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
         ring.classList.add('visible');
       }, { passive: true });
 
-      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      window.addEventListener('blur', () => {
+        isVisible = false;
+        dot.classList.remove('visible');
+        ring.classList.remove('visible');
+      });
+
+      window.addEventListener('focus', () => {
+        isVisible = true;
+        dot.classList.add('visible');
+        ring.classList.add('visible');
+      });
     })();
-    }); // end DOMContentLoaded
     
 </script>
 
 
-  <!-- SISTEMA ÚNICO DE CURSOR TÁCTICO HUD -->
+  <!-- SISTEMA ÚNICO DE CURSOR TÁCTICO HUD DE ALTA PRECISIÓN -->
   <div id="hudCursorDot" class="hud-cursor-dot" aria-hidden="true"></div>
   <div id="hudCursorRing" class="hud-cursor-ring" aria-hidden="true">
     <div class="ring-bracket top-left"></div>
     <div class="ring-bracket top-right"></div>
     <div class="ring-bracket bottom-left"></div>
     <div class="ring-bracket bottom-right"></div>
+    <span class="ring-hud-badge" id="hudCursorBadge">[TARGET]</span>
   </div>
     
 </body>
