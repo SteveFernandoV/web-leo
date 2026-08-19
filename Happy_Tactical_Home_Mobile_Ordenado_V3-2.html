@@ -154,7 +154,7 @@
     html, body {
       cursor: default;
     }
-    a, button, [role="button"], select, .btn, .interactive-card, .course-card, .gallery-stream-item, .tactical-video-card, .spotlight-media-wrap, .schedule-item, .owner-cat-btn, .modal-close-btn, .gallery-hud-btn, .filter-btn, .switch-label, .switch-input, input[type=range].form-range {
+    a, button, [role="button"], select, .btn, .interactive-card, .course-card, .gallery-stream-item, .tactical-video-card, .spotlight-media-wrap, .schedule-item, .modal-close-btn, .gallery-hud-btn, .filter-btn, .switch-label, .switch-input, input[type=range].form-range {
       cursor: pointer;
     }
     input, textarea, [contenteditable="true"] {
@@ -1387,318 +1387,6 @@
     }
 
     /* ==========================================================================
-       8. OWNER / ADMIN CMS HUD SYSTEM 2.5
-       ========================================================================== */
-    dialog.owner-pin-modal {
-      position: fixed;
-      inset: 0;
-      margin: auto;
-      width: min(400px, calc(100% - 24px));
-      background: #080b12;
-      border: 1px solid var(--border-pink);
-      border-radius: var(--radius-md);
-      padding: 24px;
-      color: #fff;
-      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9);
-      z-index: 200000;
-      opacity: 0;
-      transform: scale(0.96) translateY(8px);
-      transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-                  transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-                  overlay 0.28s cubic-bezier(0.16, 1, 0.3, 1) allow-discrete,
-                  display 0.28s cubic-bezier(0.16, 1, 0.3, 1) allow-discrete;
-    }
-    dialog.owner-pin-modal[open] {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-    @starting-style {
-      dialog.owner-pin-modal[open] {
-        opacity: 0;
-        transform: scale(0.96) translateY(8px);
-      }
-    }
-    dialog.owner-pin-modal::backdrop {
-      background: rgba(2, 3, 6, 0.9);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      opacity: 0;
-      transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-                  overlay 0.28s cubic-bezier(0.16, 1, 0.3, 1) allow-discrete,
-                  display 0.28s cubic-bezier(0.16, 1, 0.3, 1) allow-discrete;
-    }
-    dialog.owner-pin-modal[open]::backdrop {
-      opacity: 1;
-    }
-    @starting-style {
-      dialog.owner-pin-modal[open]::backdrop {
-        opacity: 0;
-      }
-    }
-    .pin-input-group {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin: 18px 0;
-    }
-    .pin-box {
-      width: 52px;
-      height: 56px;
-      text-align: center;
-      font-family: var(--font-display);
-      font-size: 24px;
-      font-weight: 800;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-medium);
-      border-radius: var(--radius-sm);
-      color: var(--neon-cyan);
-    }
-    .pin-box:focus {
-      border-color: var(--neon-pink);
-      outline: none;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    }
-
-    /* Owner Admin Drawer 2.5 */
-    #ownerAdminDrawer {
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: min(620px, 100vw);
-      background: #07090f;
-      border-left: 1.5px solid var(--border-cyan);
-      box-shadow: -15px 0 50px rgba(0, 0, 0, 0.9);
-      z-index: 150000;
-      display: flex;
-      flex-direction: column;
-      transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    #ownerAdminDrawer.open {
-      transform: translateX(0);
-    }
-    .owner-drawer-header {
-      padding: 16px 20px;
-      background: #0b0f18;
-      border-bottom: 1px solid var(--border-medium);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .owner-category-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      padding: 12px 16px;
-      background: #04060a;
-      border-bottom: 1.5px solid var(--border-medium);
-    }
-    .owner-cat-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      padding: 10px 6px;
-      min-height: 52px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      font-family: var(--font-display);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.22s var(--ease-out);
-      touch-action: manipulation;
-    }
-    .owner-cat-btn span.icon {
-      font-size: 16px;
-    }
-    .owner-cat-btn:hover {
-      background: rgba(0, 229, 255, 0.08);
-      border-color: var(--neon-cyan);
-      color: #fff;
-    }
-    .owner-cat-btn.active {
-      background: rgba(0, 229, 255, 0.15);
-      border-color: var(--neon-cyan);
-      color: var(--neon-cyan);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-    .owner-cat-btn.active:nth-child(2) {
-      background: rgba(255, 0, 127, 0.15);
-      border-color: var(--neon-pink);
-      color: var(--neon-pink);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-
-    .owner-drawer-content {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 20px;
-    }
-    .owner-tab-pane {
-      display: none;
-      animation: fadeInPane 0.25s ease-out;
-    }
-    .owner-tab-pane.active {
-      display: block;
-    }
-    @keyframes fadeInPane {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .owner-drawer-footer {
-      padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
-      background: #090c14;
-      border-top: 1px solid var(--border-subtle);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .admin-card-section {
-      background: rgba(255, 255, 255, 0.025);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    .admin-card-title {
-      font-family: var(--font-display);
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--neon-cyan);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .admin-card-title.pink {
-      color: var(--neon-pink);
-    }
-
-    .img-preview-box {
-      width: 100%;
-      height: 130px;
-      background: #030407;
-      border: 1px solid var(--border-medium);
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-    .img-preview-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-    }
-    .img-controls-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    body.ht-live-edit-active [data-ht-editable] {
-      outline: 1.5px dashed var(--neon-cyan) !important;
-      outline-offset: 3px;
-      cursor: text;
-    }
-    body.ht-live-edit-active [data-ht-editable]:focus {
-      outline: 2px solid var(--neon-pink) !important;
-      background: rgba(255, 0, 127, 0.08);
-    }
-
-    #tacticalToast {
-      position: fixed;
-      bottom: calc(24px + env(safe-area-inset-bottom));
-      right: 20px;
-      background: #090d16;
-      border: 1px solid var(--border-cyan);
-      border-radius: var(--radius-sm);
-      padding: 12px 20px;
-      font-family: var(--font-display);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: var(--text-white);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-      z-index: 250000;
-      transform: translateY(120%);
-      opacity: 0;
-      transition: transform 0.3s var(--ease-out), opacity 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    #tacticalToast.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    .switch-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      margin-bottom: 14px;
-      cursor: pointer;
-    }
-    .switch-input {
-      position: relative;
-      width: 44px;
-      height: 24px;
-      appearance: none;
-      background: #1e2638;
-      outline: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .switch-input:checked {
-      background: var(--neon-cyan);
-    }
-    .switch-input::before {
-      content: "";
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 20px;
-      height: 20px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 0.2s;
-    }
-    .switch-input:checked::before {
-      transform: translateX(20px);
-    }
-
-    input[type=range].form-range {
-      width: 100%;
-      accent-color: var(--neon-cyan);
-      background: transparent;
-      cursor: pointer;
-      min-height: 36px;
-    }
-
-    /* ==========================================================================
        9. RESPONSIVE BREAKPOINTS
        ========================================================================== */
     @media (max-width: 1024px) {
@@ -1780,19 +1468,6 @@
       }
       .quote-section-wrap {
         padding: 24px 16px;
-      }
-      #ownerAdminDrawer {
-        width: 100vw;
-      }
-      .owner-category-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 4px;
-        padding: 8px 10px;
-      }
-      .owner-cat-btn {
-        font-size: 9px;
-        padding: 6px 2px;
-        min-height: 48px;
       }
     }
 
@@ -3731,422 +3406,7 @@
     </button>
   </dialog>
 
-  <dialog class="owner-pin-modal" id="ownerPinModal">
-    <div style="text-align: center; margin-bottom: 12px;">
-      <span style="font-family: var(--font-display); font-size: 11px; color: var(--neon-pink); letter-spacing: 0.18em; font-weight: 800;">
-        [ SEGURIDAD ADMINISTRATIVA ]
-      </span>
-      <h3 style="font-family: var(--font-display); font-size: 20px; color: #fff; margin-top: 6px;">ACCESO AL PANEL DEL DUEÑO</h3>
-      <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Ingresa el PIN maestro para editar zonas sensibles y configuraciones.</p>
-    </div>
-
-    <form onsubmit="handleOwnerPinSubmit(event)">
-      <div class="pin-input-group">
-        <input type="password" maxlength="4" id="ownerPinInput" class="pin-box" placeholder="••••" style="width: 140px; letter-spacing: 8px;" autofocus required>
-      </div>
-      <div id="pinErrorMsg" style="color: var(--neon-pink); font-size: 11px; text-align: center; margin-bottom: 12px; display: none;">
-        PIN INCORRECTO. REINTENTA NUEVAMENTE.
-      </div>
-      <div style="display: flex; gap: 10px;">
-        <button type="button" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="closeOwnerPinModal()">CANCELAR</button>
-        <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;">INGRESAR 🔓</button>
-      </div>
-      <div style="margin-top: 14px; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
-        <a href="admin.html" class="btn btn-secondary btn-sm" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-          <span>ABRIR EDITOR EN PANTALLA COMPLETA</span> ↗
-        </a>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- OWNER ADMIN MANAGEMENT DRAWER 2.5 -->
-  <aside id="ownerAdminDrawer" aria-label="Panel de Control del Dueño">
-    <div class="owner-drawer-header">
-      <div>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span class="pulse-indicator"></span>
-          <span style="font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--neon-green); letter-spacing: 0.1em;">
-            PANEL DEL DUEÑO 2.5
-          </span>
-        </div>
-        <div style="font-size: 11px; color: var(--text-dim);">Edita contactos, fotos, calendario, textos y cursos</div>
-      </div>
-      <button type="button" class="modal-close-btn" onclick="closeOwnerDrawer()" aria-label="Cerrar panel">&times;</button>
-    </div>
-
-    <div class="owner-category-grid" role="tablist" aria-label="Secciones del panel de personalización">
-      <button type="button" class="owner-cat-btn active" onclick="switchOwnerTab('tab-contact', this)">
-        <span class="icon">📞</span>
-        <span>CONTACTO &amp; HUD</span>
-      </button>
-      <button type="button" class="owner-cat-btn" onclick="switchOwnerTab('tab-schedule', this)">
-        <span class="icon">📅</span>
-        <span>CALENDARIO</span>
-      </button>
-      <button type="button" class="owner-cat-btn" onclick="switchOwnerTab('tab-texts', this)">
-        <span class="icon">📝</span>
-        <span>TEXTOS INICIO</span>
-      </button>
-      <button type="button" class="owner-cat-btn" onclick="switchOwnerTab('tab-courses', this)">
-        <span class="icon">📚</span>
-        <span>LOS 3 CURSOS</span>
-      </button>
-      <button type="button" class="owner-cat-btn" onclick="switchOwnerTab('tab-images', this)">
-        <span class="icon">🖼️</span>
-        <span>FOTOS &amp; ZOOM</span>
-      </button>
-      <button type="button" class="owner-cat-btn" onclick="switchOwnerTab('tab-system', this)">
-        <span class="icon">⚙️</span>
-        <span>SISTEMA / PIN</span>
-      </button>
-    </div>
-
-    <div class="owner-drawer-content">
-
-      <!-- TAB 1: CONTACTOS -->
-      <div class="owner-tab-pane active" id="tab-contact">
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>📞 Canales de Contacto Directo</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Número de WhatsApp (con código de país ej: 51977331267)</label>
-            <input type="text" id="cfgWhatsApp" class="form-control" value="51977331267" placeholder="51977331267">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Texto visible del WhatsApp (ej: +51 977 331 267)</label>
-            <input type="text" id="cfgWhatsAppDisplay" class="form-control" value="+51 977 331 267" placeholder="+51 977 331 267">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Correo Electrónico Oficial</label>
-            <input type="email" id="cfgEmail" class="form-control" value="leonardochacon181999@hotmail.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Teléfono Central de Llamadas</label>
-            <input type="text" id="cfgPhone" class="form-control" value="+51 977 331 267">
-          </div>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>🛡️ Cintillo Superior HUD</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Texto Cintillo HUD Superior</label>
-            <input type="text" id="cfgHudBanner" class="form-control" value="SISTEMA OPERATIVO | CONVOCATORIA 2026">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Subtítulo Cintillo HUD Superior</label>
-            <input type="text" id="cfgHudSubtitle" class="form-control" value="SEDE LIMA • CERTIFICACIÓN OFICIAL • ASISTENCIA 24/7">
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 2: CALENDARIO -->
-      <div class="owner-tab-pane" id="tab-schedule">
-        <div class="admin-card-section" style="border-color: var(--border-cyan);">
-          <div class="admin-card-title">
-            <span>📅 Programar Nueva Fecha en tu Calendario</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">1. Selecciona la Fecha en tu Calendario</label>
-            <input type="date" id="newSchedRealDate" class="form-control" style="color-scheme: dark;" onchange="handleRealDateChange(this.value)">
-          </div>
-          <div class="form-group">
-            <label class="form-label">2. Etiqueta / Convocatoria Generada</label>
-            <input type="text" id="newSchedFormattedDate" class="form-control" placeholder="Ej: SÁBADO 18 ABRIL 2026">
-          </div>
-          <div class="form-group">
-            <label class="form-label">3. Nombre del Curso</label>
-            <select id="newSchedCourseSelect" class="form-control" onchange="autoFillCourseDetails(this.value)">
-              <option value="Seguridad y Prevención Integral">Seguridad y Prevención Integral (40 hrs)</option>
-              <option value="Primeros Auxilios Tácticos (TCCC)">Primeros Auxilios Tácticos TCCC (24 hrs)</option>
-              <option value="Gestión & Comando de Emergencias">Gestión &amp; Comando de Emergencias (32 hrs)</option>
-              <option value="Capacitación Corporativa In-House">Capacitación Corporativa In-House</option>
-            </select>
-          </div>
-          <div class="img-controls-grid">
-            <div class="form-group">
-              <label class="form-label">Categoría</label>
-              <select id="newSchedCategory" class="form-control">
-                <option value="seguridad">Seguridad</option>
-                <option value="emergencias">Emergencias</option>
-                <option value="primeros-auxilios">Primeros Auxilios</option>
-                <option value="corporativo">Corporativo</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Estado de Cupos</label>
-              <select id="newSchedStatus" class="form-control">
-                <option value="open">CUPOS ABIERTOS</option>
-                <option value="warning">ÚLTIMOS 3 CUPOS</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Horario y Sede</label>
-            <input type="text" id="newSchedDetails" class="form-control" value="Sábados 09:00 a 14:00 • Sede Lima • Certificado Oficial">
-          </div>
-          <button type="button" class="btn btn-primary btn-sm" onclick="addNewScheduleItem()" style="width: 100%;">
-            + GUARDAR EN CRONOGRAMA &amp; CALENDARIO
-          </button>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>📋 Convocatorias Activas</span>
-          </div>
-          <div id="ownerScheduleItemsList" style="display: flex; flex-direction: column; gap: 8px;">
-            <!-- Rendered by JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 3: TEXTOS DE INICIO -->
-      <div class="owner-tab-pane" id="tab-texts">
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>🛡️ Textos del Héroe (Portada Principal)</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Insignia Superior (Badge)</label>
-            <input type="text" id="cfgHeroBadge" class="form-control" value="[ FORMACIÓN OPERATIVA & SEGURIDAD DE ÉLITE ]">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Subtítulo 1</label>
-            <input type="text" id="cfgHeroSub1" class="form-control" value="FORMACIÓN">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Subtítulo 2</label>
-            <input type="text" id="cfgHeroSub2" class="form-control" value="DISCIPLINA">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Subtítulo 3 (Destacado Cian)</label>
-            <input type="text" id="cfgHeroSub3" class="form-control" value="SEGURIDAD TOTAL">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Párrafo Principal de Presentación</label>
-            <textarea id="cfgHeroDesc" class="form-control" rows="3">Instrucción táctica profesional en seguridad preventiva, comando de emergencias, primeros auxilios en combate (TCCC) y respuesta estratégica ante crisis con certificación de alto nivel.</textarea>
-          </div>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>🎯 Sección Nosotros (Misión & Doctrina)</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Título de la Misión</label>
-            <input type="text" id="cfgAboutMissionTitle" class="form-control" value="PREPARACIÓN ESTRATÉGICA ANTE CUALQUIER ESCENARIO">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Descripción de la Misión</label>
-            <textarea id="cfgAboutMissionDesc" class="form-control" rows="3">Nuestro enfoque combina metodología teórica rigurosa con simulacros de alta fidelidad bajo estrés controlado. Formamos el criterio preventivo y la respuesta técnica necesaria para salvaguardar vidas y proteger activos críticos.</textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 4: LOS 3 CURSOS -->
-      <div class="owner-tab-pane" id="tab-courses">
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>CURSO 1: SEGURIDAD Y PREVENCIÓN</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Título</label>
-            <input type="text" id="cfgC1Title" class="form-control" value="Seguridad y Prevención">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Horas Académicas</label>
-            <input type="text" id="cfgC1Hours" class="form-control" value="40 Horas">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Descripción</label>
-            <textarea id="cfgC1Desc" class="form-control" rows="2">Formación integral en identificación de amenazas, control de accesos táctico, resguardo patrimonial y diseño de protocolos de seguridad física.</textarea>
-          </div>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title pink">
-            <span>CURSO 2: GESTIÓN DE EMERGENCIAS</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Título</label>
-            <input type="text" id="cfgC2Title" class="form-control" value="Gestión de Emergencias">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Horas Académicas</label>
-            <input type="text" id="cfgC2Hours" class="form-control" value="32 Horas">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Descripción</label>
-            <textarea id="cfgC2Desc" class="form-control" rows="2">Planificación estratégica, sistema de comando de incidentes (SCI), evacuación masiva, control de incendios y mitigación de desastres.</textarea>
-          </div>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>CURSO 3: PRIMEROS AUXILIOS TCCC</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Título</label>
-            <input type="text" id="cfgC3Title" class="form-control" value="Primeros Auxilios Tácticos">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Horas Académicas</label>
-            <input type="text" id="cfgC3Hours" class="form-control" value="24 Horas">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Descripción</label>
-            <textarea id="cfgC3Desc" class="form-control" rows="2">Atención prehospitalaria en combate: control de hemorragias exanguinantes con torniquete, manejo de vía aérea, neumotórax y extracción de heridos.</textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 5: FOTOS & ZOOM -->
-      <div class="owner-tab-pane" id="tab-images">
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>1. Logotipo Oficial</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="resetImageSlot('logo')" style="font-size: 10px; padding: 4px 8px; min-height: 28px;">Restablecer</button>
-          </div>
-          <div class="img-preview-box">
-            <img id="prevImgLogo" src="assets/images/img_930ab638.png" alt="Vista previa Logo" style="max-height: 70px; width: auto; object-fit: contain;">
-          </div>
-          <input type="file" id="fileInputLogo" accept="image/*" style="display: none;" onchange="handleImageFileUpload('logo', event)">
-          <button type="button" class="btn btn-outline btn-sm" style="width: 100%;" onclick="document.getElementById('fileInputLogo').click()">
-            📁 SUBIR NUEVO LOGO
-          </button>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>2. Foto Principal del Héroe</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="resetImageSlot('hero')" style="font-size: 10px; padding: 4px 8px; min-height: 28px;">Restablecer</button>
-          </div>
-          <div class="img-preview-box">
-            <img id="prevImgHero" src="assets/images/img_7062ad4f.png" alt="Vista previa Héroe">
-          </div>
-          <input type="file" id="fileInputHero" accept="image/*" style="display: none;" onchange="handleImageFileUpload('hero', event)">
-          <button type="button" class="btn btn-outline btn-sm" style="width: 100%; margin-bottom: 10px;" onclick="document.getElementById('fileInputHero').click()">
-            📁 SUBIR FOTO DEL HÉROE
-          </button>
-          <div class="img-controls-grid">
-            <div>
-              <label class="form-label" style="font-size: 10px;">Punto Focal</label>
-              <select id="posHero" class="form-control" style="font-size: 12px; padding: 6px 10px;" onchange="updateImageFraming('hero')">
-                <option value="right center">Derecha (Ideal Héroe)</option>
-                <option value="center center">Centro</option>
-                <option value="center top">Superior (Rostros)</option>
-                <option value="center bottom">Inferior</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label" style="font-size: 10px;">Modo de Ajuste</label>
-              <select id="fitHero" class="form-control" style="font-size: 12px; padding: 6px 10px;" onchange="updateImageFraming('hero')">
-                <option value="cover">Llenar Marco (Cover)</option>
-                <option value="contain">Completa (Contain)</option>
-              </select>
-            </div>
-          </div>
-          <div style="margin-top: 8px;">
-            <label class="form-label" style="font-size: 10px; display: flex; justify-content: space-between;">
-              <span>Zoom / Escala</span>
-              <span id="lblScaleHero">1.00x</span>
-            </label>
-            <input type="range" id="scaleHero" class="form-range" min="1" max="1.5" step="0.02" value="1.0" oninput="updateImageFraming('hero')">
-          </div>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>3. Foto del Equipo (Nosotros)</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="resetImageSlot('about')" style="font-size: 10px; padding: 4px 8px; min-height: 28px;">Restablecer</button>
-          </div>
-          <div class="img-preview-box">
-            <img id="prevImgAbout" src="assets/images/img_3781d6ff.png" alt="Vista previa Equipo">
-          </div>
-          <input type="file" id="fileInputAbout" accept="image/*" style="display: none;" onchange="handleImageFileUpload('about', event)">
-          <button type="button" class="btn btn-outline btn-sm" style="width: 100%; margin-bottom: 10px;" onclick="document.getElementById('fileInputAbout').click()">
-            📁 SUBIR FOTO EQUIPO
-          </button>
-          <div class="img-controls-grid">
-            <div>
-              <label class="form-label" style="font-size: 10px;">Punto Focal</label>
-              <select id="posAbout" class="form-control" style="font-size: 12px; padding: 6px 10px;" onchange="updateImageFraming('about')">
-                <option value="center center">Centro</option>
-                <option value="center top">Superior (Rostros)</option>
-                <option value="center bottom">Inferior</option>
-                <option value="right center">Derecha</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label" style="font-size: 10px;">Zoom</label>
-              <input type="range" id="scaleAbout" class="form-range" min="1" max="1.5" step="0.02" value="1.0" oninput="updateImageFraming('about')">
-            </div>
-          </div>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>4. Portadas de los Cursos</span>
-          </div>
-          <div style="margin-bottom: 12px;">
-            <div style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; margin-bottom: 4px;">Curso 1: Seguridad</div>
-            <input type="file" id="fileInputC1" accept="image/*" style="display: none;" onchange="handleImageFileUpload('c1', event)">
-            <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="document.getElementById('fileInputC1').click()">📁 Cambiar Portada Curso 1</button>
-          </div>
-          <div style="margin-bottom: 12px;">
-            <div style="font-size: 11px; color: var(--neon-pink); font-weight: 700; margin-bottom: 4px;">Curso 2: Emergencias</div>
-            <input type="file" id="fileInputC2" accept="image/*" style="display: none;" onchange="handleImageFileUpload('c2', event)">
-            <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="document.getElementById('fileInputC2').click()">📁 Cambiar Portada Curso 2</button>
-          </div>
-          <div>
-            <div style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; margin-bottom: 4px;">Curso 3: Primeros Auxilios TCCC</div>
-            <input type="file" id="fileInputC3" accept="image/*" style="display: none;" onchange="handleImageFileUpload('c3', event)">
-            <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="document.getElementById('fileInputC3').click()">📁 Cambiar Portada Curso 3</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 6: SISTEMA & SEGURIDAD -->
-      <div class="owner-tab-pane" id="tab-system">
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>🔐 Seguridad del Panel</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Cambiar PIN del Dueño (4 dígitos)</label>
-            <input type="password" maxlength="4" id="cfgNewPin" class="form-control" placeholder="7788">
-          </div>
-        </div>
-
-        <div class="admin-card-section">
-          <div class="admin-card-title">
-            <span>⚡ Edición Visual en Pantalla</span>
-          </div>
-          <label class="switch-label">
-            <span style="font-family: var(--font-display); font-size: 12px; font-weight: 700;">ACTIVAR MODO EDICIÓN EN PANTALLA</span>
-            <input type="checkbox" id="liveEditToggle" class="switch-input" onchange="toggleLiveEditMode(this.checked)">
-          </label>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-          <button type="button" class="btn btn-outline btn-sm" onclick="downloadUpdatedHTMLFile()">
-            📥 DESCARGAR ARCHIVO HTML ACTUALIZADO
-          </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="restoreDefaultConfig()" style="color: var(--neon-pink);">
-            ⚠️ RESTABLECER VALORES DE FÁBRICA
-          </button>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="owner-drawer-footer">
-      <button type="button" class="btn btn-secondary btn-sm" onclick="closeOwnerDrawer()">SALIR</button>
-      <button type="button" class="btn btn-primary btn-sm" onclick="saveAllOwnerConfig()">GUARDAR CAMBIOS 💾</button>
-    </div>
-  </aside>
+  
 
   <div id="tacticalToast" role="alert" aria-live="polite">
     <span id="toastIcon">✓</span>
@@ -4440,6 +3700,7 @@
     };
 
     let HT_CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    window.HT_CONFIG = HT_CONFIG;
     const HT_ACTIVE_IMAGES = {
       logo: DEFAULT_ASSETS.logo,
       hero: DEFAULT_ASSETS.hero,
@@ -4742,7 +4003,7 @@
       renderScheduleList();
       renderGalleryStream();
       renderTacticalVideos();
-      populateOwnerFormInputs();
+      
     }
 
     function applyImagesAndFraming() {
@@ -4836,7 +4097,7 @@
         await deleteImageFromDB(slotKey);
         saveAllOwnerConfig(false);
         applyImagesAndFraming();
-        populateOwnerFormInputs();
+        
         showToast(`Foto original restablecida para ${slotKey.toUpperCase()}`);
       }
     }
@@ -4890,47 +4151,7 @@
       }
     }
 
-    function populateOwnerFormInputs() {
-      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-      setVal('cfgWhatsApp', HT_CONFIG.whatsApp);
-      setVal('cfgWhatsAppDisplay', HT_CONFIG.whatsAppDisplay);
-      setVal('cfgEmail', HT_CONFIG.email);
-      setVal('cfgPhone', HT_CONFIG.phone);
-      setVal('cfgHudBanner', HT_CONFIG.hudBanner);
-      setVal('cfgHudSubtitle', HT_CONFIG.hudSubtitle);
-
-      setVal('cfgHeroBadge', HT_CONFIG.heroBadge || DEFAULT_CONFIG.heroBadge);
-      setVal('cfgHeroSub1', HT_CONFIG.heroSub1 || DEFAULT_CONFIG.heroSub1);
-      setVal('cfgHeroSub2', HT_CONFIG.heroSub2 || DEFAULT_CONFIG.heroSub2);
-      setVal('cfgHeroSub3', HT_CONFIG.heroSub3 || DEFAULT_CONFIG.heroSub3);
-      setVal('cfgHeroDesc', HT_CONFIG.heroDesc || DEFAULT_CONFIG.heroDesc);
-      setVal('cfgAboutMissionTitle', HT_CONFIG.aboutMissionTitle || DEFAULT_CONFIG.aboutMissionTitle);
-      setVal('cfgAboutMissionDesc', HT_CONFIG.aboutMissionDesc || DEFAULT_CONFIG.aboutMissionDesc);
-
-      setVal('cfgC1Title', HT_CONFIG.c1Title);
-      setVal('cfgC1Hours', HT_CONFIG.c1Hours);
-      setVal('cfgC1Desc', HT_CONFIG.c1Desc);
-      setVal('cfgC2Title', HT_CONFIG.c2Title);
-      setVal('cfgC2Hours', HT_CONFIG.c2Hours);
-      setVal('cfgC2Desc', HT_CONFIG.c2Desc);
-      setVal('cfgC3Title', HT_CONFIG.c3Title);
-      setVal('cfgC3Hours', HT_CONFIG.c3Hours);
-      setVal('cfgC3Desc', HT_CONFIG.c3Desc);
-
-      const meta = HT_CONFIG.imageMeta;
-      ['hero', 'about'].forEach(k => {
-        const capKey = k.charAt(0).toUpperCase() + k.slice(1);
-        const data = meta[k] || DEFAULT_CONFIG.imageMeta[k];
-        const posEl = document.getElementById(`pos${capKey}`);
-        if (posEl && data.position) posEl.value = data.position;
-        const fitEl = document.getElementById(`fit${capKey}`);
-        if (fitEl && data.fit) fitEl.value = data.fit;
-        const scaleEl = document.getElementById(`scale${capKey}`);
-        if (scaleEl && data.scale) scaleEl.value = data.scale;
-        const lblScale = document.getElementById(`lblScale${capKey}`);
-        if (lblScale && data.scale) lblScale.textContent = `${Number(data.scale).toFixed(2)}x`;
-      });
-    }
+    
 
     // --- Google Calendar Sync ---
     const calSyncModal = document.getElementById('calSyncModal');
@@ -5040,55 +4261,13 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
       }
     }
 
-    // --- Drawer PIN & Tab Switcher ---
-    const pinModal = document.getElementById('ownerPinModal');
-    const ownerDrawer = document.getElementById('ownerAdminDrawer');
-
-    function openOwnerPinModal() {
-      if (pinModal) {
-        document.getElementById('ownerPinInput').value = '';
-        document.getElementById('pinErrorMsg').style.display = 'none';
-        pinModal.showModal();
-      }
-    }
-
-    function closeOwnerPinModal() {
-      if (pinModal) pinModal.close();
-    }
-
-    function handleOwnerPinSubmit(e) {
-      e.preventDefault();
-      const enteredPin = document.getElementById('ownerPinInput').value.trim();
-      const actualPin = HT_CONFIG.pin || '7788';
-
-      if (enteredPin === actualPin) {
-        closeOwnerPinModal();
-        if (ownerDrawer) ownerDrawer.classList.add('open');
-        showToast('🔓 ACCESO DE PROPIETARIO CONCEDIDO');
-      } else {
-        document.getElementById('pinErrorMsg').style.display = 'block';
-        document.getElementById('ownerPinInput').select();
-      }
-    }
-
-    function closeOwnerDrawer() {
-      if (ownerDrawer) ownerDrawer.classList.remove('open');
-    }
-
+    // --- Acceso Rápido al Centro de Mando (admin.html) ---
     window.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         e.preventDefault();
-        openOwnerPinModal();
+        window.location.href = 'admin.html';
       }
     });
-
-    function switchOwnerTab(tabId, btn) {
-      document.querySelectorAll('.owner-tab-pane').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.owner-cat-btn').forEach(b => b.classList.remove('active'));
-      const pane = document.getElementById(tabId);
-      if (pane) pane.classList.add('active');
-      if (btn) btn.classList.add('active');
-    }
 
     // --- Save All ---
     function saveAllOwnerConfig(showFeedback = true) {
@@ -5139,75 +4318,6 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
       }
     }
 
-    async function restoreDefaultConfig() {
-      if (confirm('¿Estás seguro de restablecer todos los datos e imágenes a la configuración inicial de fábrica?')) {
-        localStorage.removeItem('HT_OWNER_CONFIG_V2');
-        localStorage.removeItem('HT_OWNER_CONFIG');
-        const slots = ['logo', 'hero', 'about', 'c1', 'c2', 'c3'];
-        for (const slot of slots) {
-          await deleteImageFromDB(slot);
-          HT_ACTIVE_IMAGES[slot] = DEFAULT_ASSETS[slot];
-        }
-        HT_CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        applyConfigToDOM();
-        showToast('Valores de fábrica restablecidos');
-      }
-    }
-
-    function toggleLiveEditMode(isActive) {
-      document.body.classList.toggle('ht-live-edit-active', isActive);
-      document.querySelectorAll('[data-ht-editable]').forEach(el => {
-        el.contentEditable = isActive ? 'true' : 'false';
-        if (isActive) {
-          el.addEventListener('blur', handleLiveEditBlur);
-        }
-      });
-      showToast(isActive ? '⚡ MODO EDICIÓN EN PANTALLA ACTIVADO' : 'Modo edición desactivado');
-    }
-
-    function handleLiveEditBlur(e) {
-      const key = e.target.getAttribute('data-ht-editable');
-      if (key && HT_CONFIG.hasOwnProperty(key)) {
-        HT_CONFIG[key] = e.target.textContent.trim();
-      }
-    }
-
-    function downloadUpdatedHTMLFile() {
-      saveAllOwnerConfig(false);
-      const docClone = document.documentElement.cloneNode(true);
-      
-      const drawerClone = docClone.querySelector('#ownerAdminDrawer');
-      if (drawerClone) drawerClone.classList.remove('open');
-      const modalClone = docClone.querySelector('#ownerPinModal');
-      if (modalClone) modalClone.removeAttribute('open');
-
-      const logoEl = docClone.querySelector('#mainNavLogo');
-      if (logoEl) logoEl.src = HT_ACTIVE_IMAGES.logo;
-      const footerLogoEl = docClone.querySelector('#mainFooterLogo');
-      if (footerLogoEl) footerLogoEl.src = HT_ACTIVE_IMAGES.logo;
-      const heroEl = docClone.querySelector('#heroBgImg');
-      if (heroEl) heroEl.src = HT_ACTIVE_IMAGES.hero;
-      const aboutEl = docClone.querySelector('#aboutPhotoImg');
-      if (aboutEl) aboutEl.src = HT_ACTIVE_IMAGES.about;
-      const c1El = docClone.querySelector('#c1Img');
-      if (c1El) c1El.src = HT_ACTIVE_IMAGES.c1;
-      const c2El = docClone.querySelector('#c2Img');
-      if (c2El) c2El.src = HT_ACTIVE_IMAGES.c2;
-      const c3El = docClone.querySelector('#c3Img');
-      if (c3El) c3El.src = HT_ACTIVE_IMAGES.c3;
-
-      const htmlContent = '<!DOCTYPE html>\n' + docClone.outerHTML;
-      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Happy_Tactical_Actualizado.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('📥 Archivo HTML actualizado descargado');
-    }
 
     function showToast(msg, isSuccess = true) {
       const toast = document.getElementById('tacticalToast');
@@ -5390,25 +4500,68 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
     }
 
     // ========================================================================
-    // TACTICAL VIDEO LIBRARY, SPOTLIGHT HERO & CINEMA MODAL
+    // MOTOR UNIFICADO DE VIDEOTECA TÁCTICA & GESTOR DE CONTENIDOS
     // ========================================================================
     let currentVideoCategory = 'todos';
 
-    function getEmbedUrl(url) {
-      if (!url) return '';
-      if (url.includes('embed')) return url;
-      
+    function extractVideoInfo(url) {
+      if (!url) return { embedUrl: '', thumbnail: '', type: 'unknown' };
+      url = url.trim();
+
+      // YouTube Shorts
+      const ytShortsMatch = url.match(/(?:youtube\.com\/shorts\/)([\w-]{11})/);
+      if (ytShortsMatch && ytShortsMatch[1]) {
+        const id = ytShortsMatch[1];
+        return {
+          embedUrl: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`,
+          thumbnail: `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+          type: 'youtube',
+          videoId: id
+        };
+      }
+
+      // YouTube Standard
       const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
       if (ytMatch && ytMatch[1]) {
-        return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
+        const id = ytMatch[1];
+        return {
+          embedUrl: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`,
+          thumbnail: `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+          type: 'youtube',
+          videoId: id
+        };
       }
 
+      // Vimeo
       const vimeoMatch = url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/[^\/]*\/videos\/|album\/(?:\d+\/)?video\/|video\/|)(\d+)/);
       if (vimeoMatch && vimeoMatch[1]) {
-        return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
+        const id = vimeoMatch[1];
+        return {
+          embedUrl: `https://player.vimeo.com/video/${id}?autoplay=1`,
+          thumbnail: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+          type: 'vimeo',
+          videoId: id
+        };
       }
 
-      return url;
+      // Direct MP4
+      if (url.match(/\.(mp4|webm|ogv)(\?.*)?$/i)) {
+        return {
+          embedUrl: url,
+          thumbnail: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+          type: 'direct_video'
+        };
+      }
+
+      return {
+        embedUrl: url,
+        thumbnail: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+        type: 'generic'
+      };
+    }
+
+    function getEmbedUrl(url) {
+      return extractVideoInfo(url).embedUrl;
     }
 
     function getCategoryLabel(cat) {
@@ -5418,40 +4571,27 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
         'emergencias': 'GESTIÓN DE EMERGENCIAS',
         'corporativo': 'BRIGADAS EMPRESARIALES'
       };
-      return map[cat] || 'TÁCTICO OPERATIVO';
+      return map[cat] || (cat ? cat.toUpperCase() : 'TÁCTICO');
     }
 
     function renderTacticalVideos(category = 'todos') {
       currentVideoCategory = category;
-      const grid = document.getElementById('tacticalVideoGrid');
       const spotlightWrap = document.getElementById('videoSpotlightContainer');
+      const grid = document.getElementById('tacticalVideoGrid');
 
-      const videoList = (HT_CONFIG.videos && Array.isArray(HT_CONFIG.videos) && HT_CONFIG.videos.length > 0)
-        ? HT_CONFIG.videos
-        : DEFAULT_CONFIG.videos;
+      let list = (HT_CONFIG.videos && Array.isArray(HT_CONFIG.videos) && HT_CONFIG.videos.length > 0)
+        ? [...HT_CONFIG.videos]
+        : [...DEFAULT_CONFIG.videos];
 
-      const filtered = category === 'todos' 
-        ? videoList 
-        : videoList.filter(v => v.category === category);
+      list.sort((a, b) => (b.featured === true ? 1 : 0) - (a.featured === true ? 1 : 0));
 
-      if (filtered.length === 0) {
-        if (spotlightWrap) spotlightWrap.innerHTML = '';
-        if (grid) {
-          grid.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.15);">
-              <span style="font-size: 32px; display: block; margin-bottom: 10px;">📹</span>
-              <p style="font-family: var(--font-display); font-size: 15px; color: var(--text-dim);">No hay videos registrados en esta categoría actualmente.</p>
-            </div>
-          `;
-        }
-        return;
-      }
+      const filtered = category === 'todos' ? list : list.filter(v => v.category === category);
 
-      // 1. RENDER SPOTLIGHT (FEATURED VIDEO HERO)
-      const featured = filtered[0];
+      // 1. RENDER SPOTLIGHT VIDEO
+      const featured = filtered.length > 0 ? filtered[0] : list[0];
       if (spotlightWrap && featured) {
         const cleanWa = (HT_CONFIG.whatsApp || '51977331267').replace(/\D/g, '');
-        const waMsg = encodeURIComponent(`Hola Happy Tactical, vi el video destacado "${featured.title}" y quisiera información sobre las capacitaciones en este tema.`);
+        const waMsg = encodeURIComponent(`Hola Happy Tactical, vi el video destacado "${featured.title}" y quisiera información sobre las capacitaciones.`);
         
         spotlightWrap.innerHTML = `
           <div class="tactical-video-spotlight tactical-3d-card" data-tilt="true">
@@ -5462,7 +4602,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
                 <span class="spotlight-rec-dot"></span> TRANSMISIÓN OPERATIVA 4K
               </div>
               <div class="spotlight-duration-tag">⏱️ ${featured.duration || '04:20'}</div>
-              <img src="${featured.thumbnail || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80'}" alt="${featured.title}" class="spotlight-thumb">
+              <img src="${featured.thumbnail || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80'}" alt="${featured.title}" class="spotlight-thumb" onerror="this.src='https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80'">
               <div class="spotlight-overlay">
                 <div class="spotlight-play-pulse-btn" aria-hidden="true">
                   <span>▶</span>
@@ -5494,37 +4634,48 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
         `;
       }
 
-      // 2. RENDER GRID (ALL FILTERED VIDEOS)
+      // 2. RENDER GRID
       if (grid) {
-        grid.innerHTML = filtered.map(item => {
-          return `
-            <article class="tactical-video-card" onclick="openTacticalVideoModal('${item.id}')" role="button" tabindex="0" aria-label="Ver video: ${item.title}">
-              <div class="video-thumb-container">
-                ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title}" loading="lazy">` : `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--neon-cyan); font-size:32px;">▶</div>`}
-                <div class="video-card-overlay">
-                  <div class="video-play-pulse-btn" aria-hidden="true">▶</div>
-                </div>
-                <span class="video-badge-pill">${item.badge || 'VIDEO TÁCTICO'}</span>
-                <span class="video-duration-pill">⏱️ ${item.duration || '03:30'}</span>
-              </div>
-
-              <div class="video-card-content">
-                <div>
-                  <h4 class="video-card-title">${item.title}</h4>
-                  <p class="video-card-desc">${item.desc || 'Entrenamiento táctico y operativo especializado.'}</p>
-                </div>
-                <div class="video-card-footer">
-                  <span class="video-watch-link">
-                    <span>REPRODUCIR VIDEO</span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  </span>
-                  <span style="font-family: var(--font-display); font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px;">${item.category || 'TÁCTICO'}</span>
-                </div>
-              </div>
-            </article>
+        if (filtered.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: rgba(0,0,0,0.3); border: 1px dashed rgba(0,229,255,0.2); border-radius: 10px;">
+              <p style="color: var(--text-dim); font-size: 14px;">No hay videos registrados en esta categoría aún.</p>
+              <button type="button" class="btn btn-primary btn-sm" onclick="openVideoEditorModal()" style="margin-top: 12px;">+ Añadir Video a esta categoría</button>
+            </div>
           `;
-        }).join('');
+        } else {
+          grid.innerHTML = filtered.map(item => {
+            return `
+              <article class="tactical-video-card" onclick="openTacticalVideoModal('${item.id}')" role="button" tabindex="0" aria-label="Ver video: ${item.title}">
+                <div class="video-thumb-container">
+                  ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80'">` : `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--neon-cyan); font-size:32px;">▶</div>`}
+                  <div class="video-card-overlay">
+                    <div class="video-play-pulse-btn" aria-hidden="true">▶</div>
+                  </div>
+                  <span class="video-badge-pill">${item.badge || 'VIDEO TÁCTICO'}</span>
+                  <span class="video-duration-pill">⏱️ ${item.duration || '03:30'}</span>
+                </div>
+
+                <div class="video-card-content">
+                  <div>
+                    <h4 class="video-card-title">${item.title}</h4>
+                    <p class="video-card-desc">${item.desc || 'Entrenamiento táctico y operativo especializado.'}</p>
+                  </div>
+                  <div class="video-card-footer">
+                    <span class="video-watch-link">
+                      <span>REPRODUCIR VIDEO</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </span>
+                    <span style="font-family: var(--font-display); font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px;">${getCategoryLabel(item.category)}</span>
+                  </div>
+                </div>
+              </article>
+            `;
+          }).join('');
+        }
       }
+
+      
 
       if (typeof init3DTilt === 'function') {
         setTimeout(init3DTilt, 50);
@@ -5565,21 +4716,29 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
 
       const embedUrl = getEmbedUrl(item.videoUrl);
       if (playerWrap) {
-        playerWrap.innerHTML = `
-          <div class="video-iframe-wrap">
-            <iframe 
-              src="${embedUrl}" 
-              title="${item.title}" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-              allowfullscreen>
-            </iframe>
-          </div>
-        `;
+        if (embedUrl.includes('<iframe') || embedUrl.includes('http')) {
+          playerWrap.innerHTML = `
+            <div class="video-iframe-wrap">
+              <iframe 
+                src="${embedUrl}" 
+                title="${item.title}" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen>
+              </iframe>
+            </div>
+          `;
+        } else {
+          playerWrap.innerHTML = `
+            <div class="video-iframe-wrap" style="display:flex; align-items:center; justify-content:center; background:#000; color:#fff;">
+              <p>Formato de video no reproducible directamente.</p>
+            </div>
+          `;
+        }
       }
 
       if (waBtn) {
         const cleanWa = (HT_CONFIG.whatsApp || '51977331267').replace(/\D/g, '');
-        const msg = encodeURIComponent(`Hola Happy Tactical, vi el video "${item.title}" y quisiera información sobre las próximas fechas de capacitación.`);
+        const msg = encodeURIComponent(`Hola Happy Tactical, vi el video "${item.title}" y quisiera información sobre las próximas capacitaciones.`);
         waBtn.href = `https://wa.me/${cleanWa}?text=${msg}`;
       }
 
@@ -5592,32 +4751,237 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
     function closeTacticalVideoModal() {
       const modal = document.getElementById('tacticalVideoModal');
       const playerWrap = document.getElementById('videoPlayerContainer');
-      if (playerWrap) playerWrap.innerHTML = ''; // Stop video playback
+      if (playerWrap) playerWrap.innerHTML = '';
       if (modal && typeof modal.close === 'function') {
         modal.close();
       }
       document.body.style.overflow = '';
     }
 
-    // Modal backdrop click listener for Lightbox & Video Modal
-    document.addEventListener('DOMContentLoaded', () => {
-      ['tacticalLightboxModal', 'tacticalVideoModal'].forEach(mId => {
-        const m = document.getElementById(mId);
-        if (m) {
-          m.addEventListener('click', (e) => {
-            const rect = m.getBoundingClientRect();
-            const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
-                                rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
-            if (!isInDialog) {
-              if (mId === 'tacticalLightboxModal') closeTacticalLightbox();
-              if (mId === 'tacticalVideoModal') closeTacticalVideoModal();
-            }
-          });
-        }
-      });
-    });
+    function handleVideoUrlInput(val) {
+      const info = extractVideoInfo(val);
+      const previewThumb = document.getElementById('editVideoPreviewThumb');
+      const thumbInput = document.getElementById('editVideoThumbUrl');
 
-        function openCourseModal(courseKey) {
+      if (info.thumbnail && (!thumbInput.value || thumbInput.value.includes('youtube.com') || thumbInput.value.includes('unsplash.com'))) {
+        thumbInput.value = info.thumbnail;
+        if (previewThumb) previewThumb.src = info.thumbnail;
+      }
+    }
+
+    async function handleCustomVideoThumbUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      showToast('⏳ Procesando miniatura...');
+      try {
+        const base64 = await compressImageFile(file, 'video_thumb');
+        const thumbInput = document.getElementById('editVideoThumbUrl');
+        const previewThumb = document.getElementById('editVideoPreviewThumb');
+        if (thumbInput) thumbInput.value = base64;
+        if (previewThumb) previewThumb.src = base64;
+        showToast('✓ Miniatura cargada exitosamente');
+      } catch (err) {
+        console.error('Error procesando miniatura', err);
+        showToast('Error al procesar miniatura', false);
+      }
+    }
+
+    function openVideoEditorModal(videoId = null) {
+      const modal = document.getElementById('videoEditorModal');
+      if (!modal) return;
+
+      const titleAction = document.getElementById('videoModalActionTitle');
+      const idInput = document.getElementById('editVideoId');
+      const urlInput = document.getElementById('editVideoUrl');
+      const catInput = document.getElementById('editVideoCategory');
+      const durInput = document.getElementById('editVideoDuration');
+      const titleInput = document.getElementById('editVideoTitle');
+      const badgeInput = document.getElementById('editVideoBadge');
+      const thumbInput = document.getElementById('editVideoThumbUrl');
+      const descInput = document.getElementById('editVideoDesc');
+      const featInput = document.getElementById('editVideoFeatured');
+
+      const prevThumb = document.getElementById('editVideoPreviewThumb');
+      const prevBadge = document.getElementById('editVideoPreviewBadge');
+      const prevTitle = document.getElementById('editVideoPreviewTitle');
+      const prevDur = document.getElementById('editVideoPreviewDuration');
+
+      if (!HT_CONFIG.videos) HT_CONFIG.videos = [...DEFAULT_CONFIG.videos];
+
+      if (videoId) {
+        const item = HT_CONFIG.videos.find(v => v.id === videoId);
+        if (item) {
+          titleAction.innerHTML = '<span>✏️</span> EDITAR VIDEO TÁCTICO';
+          idInput.value = item.id;
+          urlInput.value = item.videoUrl || '';
+          catInput.value = item.category || 'seguridad';
+          durInput.value = item.duration || '04:00';
+          titleInput.value = item.title || '';
+          badgeInput.value = item.badge || 'TÁCTICO';
+          thumbInput.value = item.thumbnail || '';
+          descInput.value = item.desc || '';
+          featInput.checked = !!item.featured;
+
+          prevThumb.src = item.thumbnail || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80';
+          prevBadge.textContent = (item.badge || 'TÁCTICO').toUpperCase();
+          prevTitle.textContent = item.title || 'Título del video...';
+          prevDur.textContent = '⏱️ ' + (item.duration || '04:00');
+        }
+      } else {
+        titleAction.innerHTML = '<span>🎬</span> AÑADIR NUEVO VIDEO TÁCTICO';
+        idInput.value = '';
+        urlInput.value = '';
+        catInput.value = 'seguridad';
+        durInput.value = '04:30';
+        titleInput.value = '';
+        badgeInput.value = 'ENTRENAMIENTO REAL';
+        thumbInput.value = 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80';
+        descInput.value = '';
+        featInput.checked = false;
+
+        prevThumb.src = 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80';
+        prevBadge.textContent = 'ENTRENAMIENTO REAL';
+        prevTitle.textContent = 'Título del video...';
+        prevDur.textContent = '⏱️ 04:30';
+      }
+
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeVideoEditorModal() {
+      const modal = document.getElementById('videoEditorModal');
+      if (modal) modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function saveVideoItemFromModal() {
+      const id = document.getElementById('editVideoId').value;
+      const url = document.getElementById('editVideoUrl').value.trim();
+      const cat = document.getElementById('editVideoCategory').value;
+      const dur = document.getElementById('editVideoDuration').value.trim() || '04:00';
+      const title = document.getElementById('editVideoTitle').value.trim();
+      const badge = document.getElementById('editVideoBadge').value.trim() || 'TÁCTICO';
+      let thumb = document.getElementById('editVideoThumbUrl').value.trim();
+      const desc = document.getElementById('editVideoDesc').value.trim();
+      const featured = document.getElementById('editVideoFeatured').checked;
+
+      if (!url) {
+        alert('Por favor ingresa el enlace del video.');
+        return;
+      }
+      if (!title) {
+        alert('Por favor ingresa un título para el video.');
+        return;
+      }
+
+      if (!thumb) {
+        thumb = extractVideoInfo(url).thumbnail || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80';
+      }
+
+      if (!HT_CONFIG.videos) HT_CONFIG.videos = [...DEFAULT_CONFIG.videos];
+
+      if (featured) {
+        HT_CONFIG.videos.forEach(v => { v.featured = false; });
+      }
+
+      if (id) {
+        const idx = HT_CONFIG.videos.findIndex(v => v.id === id);
+        if (idx !== -1) {
+          HT_CONFIG.videos[idx] = {
+            id: id,
+            title: title,
+            category: cat,
+            badge: badge.toUpperCase(),
+            duration: dur,
+            videoUrl: url,
+            thumbnail: thumb,
+            desc: desc,
+            featured: featured
+          };
+          showToast('✓ Video actualizado correctamente');
+        }
+      } else {
+        const newVid = {
+          id: 'vid-' + Date.now(),
+          title: title,
+          category: cat,
+          badge: badge.toUpperCase(),
+          duration: dur,
+          videoUrl: url,
+          thumbnail: thumb,
+          desc: desc,
+          featured: featured
+        };
+        if (featured) {
+          HT_CONFIG.videos.unshift(newVid);
+        } else {
+          HT_CONFIG.videos.push(newVid);
+        }
+        showToast('✓ Nuevo video añadido a la videoteca');
+      }
+
+      saveAllOwnerConfig(false);
+      renderTacticalVideos(currentVideoCategory);
+      closeVideoEditorModal();
+    }
+
+    function deleteVideoItem(videoId) {
+      if (confirm('¿Estás seguro de que deseas eliminar este video de la videoteca?')) {
+        if (!HT_CONFIG.videos) HT_CONFIG.videos = [...DEFAULT_CONFIG.videos];
+        HT_CONFIG.videos = HT_CONFIG.videos.filter(v => v.id !== videoId);
+        saveAllOwnerConfig(false);
+        renderTacticalVideos(currentVideoCategory);
+        showToast('Video eliminado.');
+      }
+    }
+
+    function setFeaturedVideo(videoId) {
+      if (!HT_CONFIG.videos) HT_CONFIG.videos = [...DEFAULT_CONFIG.videos];
+      HT_CONFIG.videos.forEach(v => {
+        v.featured = (v.id === videoId);
+      });
+      saveAllOwnerConfig(false);
+      renderTacticalVideos(currentVideoCategory);
+      showToast('⭐ Video fijado como destacado en la portada');
+    }
+
+    function renderOwnerVideoList() {
+      const container = document.getElementById('ownerVideoListContainer');
+      if (!container) return;
+
+      const videos = (HT_CONFIG.videos && Array.isArray(HT_CONFIG.videos) && HT_CONFIG.videos.length > 0)
+        ? HT_CONFIG.videos
+        : DEFAULT_CONFIG.videos;
+
+      container.innerHTML = videos.map((item, idx) => {
+        return `
+          <div style="background: rgba(0,0,0,0.5); border: 1px solid ${item.featured ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.08)'}; border-radius: 8px; padding: 12px; display: flex; gap: 12px; align-items: center; position: relative;">
+            ${item.featured ? `<span style="position: absolute; top: -8px; right: 10px; font-size: 9px; font-family: var(--font-display); background: var(--neon-cyan); color: #000; font-weight: 800; padding: 1px 6px; border-radius: 3px;">DESTACADO PORTADA</span>` : ''}
+            
+            <img src="${item.thumbnail || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80'}" alt="${item.title}" style="width: 80px; height: 50px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: #000;" onerror="this.src='https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80'">
+            
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 2px;">
+                <span style="font-size: 9px; font-family: var(--font-display); color: var(--neon-cyan); background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.3); padding: 1px 4px; border-radius: 3px;">${item.badge || 'TÁCTICO'}</span>
+                <span style="font-size: 10px; color: var(--text-dim);">⏱️ ${item.duration || '04:00'}</span>
+                <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">• ${getCategoryLabel(item.category)}</span>
+              </div>
+              <h5 style="color: #fff; font-size: 12px; font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</h5>
+            </div>
+
+            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openVideoEditorModal('${item.id}')" title="Editar Video" style="padding: 4px 8px; font-size: 11px;">✏️</button>
+              <button type="button" class="btn ${item.featured ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="setFeaturedVideo('${item.id}')" title="Fijar como Destacado" style="padding: 4px 8px; font-size: 11px;">⭐</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="deleteVideoItem('${item.id}')" title="Eliminar Video" style="padding: 4px 8px; font-size: 11px; color: #ff4757; border-color: rgba(255,71,87,0.3);">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openCourseModal(courseKey) {
       const data = courseData[courseKey];
       if (!data || !modal) return;
 
@@ -5654,7 +5018,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
     }
 
     // Enhanced Modal Backdrop Click & Escape Dismissal
-    [modal, calSyncModal, pinModal].forEach(dlg => {
+    [modal, calSyncModal].forEach(dlg => {
       if (dlg) {
         dlg.addEventListener('click', (e) => {
           const rect = dlg.getBoundingClientRect();
@@ -6215,7 +5579,7 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
             else if (interactiveTarget.matches('.gallery-stream-item, .gallery-hud-btn')) label = '[AMPLIAR]';
             else if (interactiveTarget.matches('.course-card, [onclick*="openCourseModal"]')) label = '[VER CURSO]';
             else if (interactiveTarget.matches('.schedule-item, [onclick*="openCalSyncModal"]')) label = '[CALENDARIO]';
-            else if (interactiveTarget.matches('.filter-btn, .owner-cat-btn')) label = '[FILTRAR]';
+            else if (interactiveTarget.matches('.filter-btn')) label = '[FILTRAR]';
             else if (interactiveTarget.matches('.modal-close-btn, [data-action="close"]')) label = '[CERRAR]';
             else if (interactiveTarget.matches('button, .btn')) label = '[ACCEDER]';
             badge.textContent = label;
@@ -6282,5 +5646,113 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
     <span class="ring-hud-badge" id="hudCursorBadge">[TARGET]</span>
   </div>
     
+  <!-- MODAL TÁCTICO DE CREACIÓN / EDICIÓN DE VIDEOS -->
+  <div id="videoEditorModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); z-index: 9999999; display: none; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0b111e; border: 1px solid var(--neon-cyan); border-radius: 14px; max-width: 580px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 35px rgba(0,229,255,0.25); padding: 24px; position: relative;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 12px;">
+        <h3 id="videoModalActionTitle" style="color: #fff; font-size: 16px; font-weight: 800; font-family: var(--font-display); letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px;">
+          <span>🎬</span> GESTOR DE VIDEO TÁCTICO
+        </h3>
+        <button type="button" onclick="closeVideoEditorModal()" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Live Preview Box -->
+      <div style="margin-bottom: 16px; background: rgba(0,0,0,0.6); border: 1px dashed rgba(0,229,255,0.3); border-radius: 10px; padding: 12px; display: flex; gap: 14px; align-items: center;">
+        <div style="position: relative; width: 130px; height: 75px; flex-shrink: 0; border-radius: 6px; overflow: hidden; background: #000;">
+          <img id="editVideoPreviewThumb" src="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">
+          <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); color: var(--neon-cyan); font-size: 20px;">▶</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div id="editVideoPreviewBadge" style="display: inline-block; font-size: 9.5px; font-family: var(--font-display); background: rgba(0,229,255,0.15); color: var(--neon-cyan); border: 1px solid rgba(0,229,255,0.4); padding: 2px 6px; border-radius: 4px; font-weight: 700;">TÁCTICO</div>
+          <div id="editVideoPreviewTitle" style="color: #fff; font-size: 13px; font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Título del video...</div>
+          <div id="editVideoPreviewDuration" style="color: var(--text-dim); font-size: 11px; margin-top: 2px;">⏱️ 04:00</div>
+        </div>
+      </div>
+
+      <input type="hidden" id="editVideoId" value="">
+
+      <!-- Form Fields -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 11px; font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 4px; font-weight: 700; letter-spacing: 0.5px;">
+            ENLACE DEL VIDEO (YouTube, YouTube Shorts, Vimeo, MP4) *
+          </label>
+          <input type="text" id="editVideoUrl" class="form-input" placeholder="https://www.youtube.com/watch?v=..." oninput="handleVideoUrlInput(this.value)" style="width: 100%; font-size: 12.5px;">
+          <span style="font-size: 10.5px; color: var(--text-dim); margin-top: 2px; display: block;">
+            ⚡ Se detecta y extrae automáticamente la miniatura HD oficial de YouTube.
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="display: block; font-size: 11px; font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 4px; font-weight: 700;">
+              CATEGORÍA / ESPECIALIDAD *
+            </label>
+            <select id="editVideoCategory" class="form-input" style="width: 100%; font-size: 12px;">
+              <option value="seguridad">Tiro Defensivo & Seguridad</option>
+              <option value="primeros-auxilios">Medicina Táctica TCCC</option>
+              <option value="emergencias">Gestión de Emergencias</option>
+              <option value="corporativo">Brigadas Empresariales</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 4px; font-weight: 700;">
+              DURACIÓN ESTIMADA
+            </label>
+            <input type="text" id="editVideoDuration" class="form-input" placeholder="04:30" style="width: 100%; font-size: 12px;" oninput="document.getElementById('editVideoPreviewDuration').textContent = '⏱️ ' + (this.value || '04:00')">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+          <div>
+            <label style="display: block; font-size: 11px; font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 4px; font-weight: 700;">
+              TÍTULO DEL VIDEO *
+            </label>
+            <input type="text" id="editVideoTitle" class="form-input" placeholder="Ej: Demostración de Tiro Táctico y Reacción Armada" style="width: 100%; font-size: 12px;" oninput="document.getElementById('editVideoPreviewTitle').textContent = this.value || 'Título del video...'">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 4px; font-weight: 700;">
+              INSIGNIA / BADGE
+            </label>
+            <input type="text" id="editVideoBadge" class="form-input" placeholder="TIRO DEFENSIVO" style="width: 100%; font-size: 12px;" oninput="document.getElementById('editVideoPreviewBadge').textContent = (this.value || 'TÁCTICO').toUpperCase()">
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 11px; font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 4px; font-weight: 700;">
+            MINIATURA PERSONALIZADA (OPCIONAL)
+          </label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="editVideoThumbUrl" class="form-input" placeholder="URL o miniatura detectada" style="flex: 1; font-size: 12px;" oninput="document.getElementById('editVideoPreviewThumb').src = this.value">
+            <label class="btn btn-secondary btn-sm" style="cursor: pointer; white-space: nowrap; font-size: 11px; padding: 6px 10px;">
+              📁 Subir Foto
+              <input type="file" accept="image/*" style="display: none;" onchange="handleCustomVideoThumbUpload(event)">
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 11px; font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 4px; font-weight: 700;">
+            DESCRIPCIÓN OPERATIVA / DETALLE DEL VIDEO
+          </label>
+          <textarea id="editVideoDesc" class="form-input" rows="2" placeholder="Resumen del ejercicio táctico realizado en campo..." style="width: 100%; font-size: 12px; resize: vertical;"></textarea>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,229,255,0.06); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(0,229,255,0.2);">
+          <input type="checkbox" id="editVideoFeatured" style="cursor: pointer;">
+          <label for="editVideoFeatured" style="color: #fff; font-size: 12px; font-weight: 700; cursor: pointer;">
+            ⭐ Fijar como Video Destacado (Spotlight en portada de videoteca)
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeVideoEditorModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveVideoItemFromModal()">Guardar Video 💾</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

@@ -1246,9 +1246,9 @@
           <div class="module-header">
             <div>
               <h2 class="module-title">VIDEOTECA <span>OPERATIVA TÁCTICA</span></h2>
-              <p class="module-desc">Cuadro interactivo con detección automática de miniaturas de YouTube.</p>
+              <p class="module-desc">Gestor integral de grabaciones en campo con detección automática de miniaturas HD de YouTube.</p>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" onclick="addNewVideoItem()">+ Añadir Video 🎬</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="openAdminVideoModal()">+ Añadir Video 🎬</button>
           </div>
 
           <div class="interactive-card">
@@ -1827,34 +1827,263 @@
       }
     }
 
-    function addNewVideoItem() {
-      const title = prompt('Título del Video:');
-      if (!title) return;
-      const videoUrl = prompt('URL de YouTube:', 'https://www.youtube.com/watch?v=ScMzIvxBSi4');
-      if (!videoUrl) return;
+    // ========================================================================
+    // MOTOR DE VIDEOTECA EN PANEL DE ADMINISTRACIÓN
+    // ========================================================================
+    function extractVideoInfo(url) {
+      if (!url) return { embedUrl: '', thumbnail: '', type: 'unknown' };
+      url = url.trim();
 
-      APP_CONFIG.videos.push({
-        id: 'vid-' + Date.now(),
-        title: title,
-        badge: 'VIDEO TÁCTICO',
-        duration: '04:00',
-        category: 'seguridad',
-        thumbnail: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80',
-        videoUrl: videoUrl
-      });
+      const ytShortsMatch = url.match(/(?:youtube\.com\/shorts\/)([\w-]{11})/);
+      if (ytShortsMatch && ytShortsMatch[1]) {
+        const id = ytShortsMatch[1];
+        return {
+          embedUrl: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`,
+          thumbnail: `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+          type: 'youtube',
+          videoId: id
+        };
+      }
 
-      renderVideoList();
-      updateOverviewStats();
-      showToast('Video agregado a la videoteca.');
+      const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+      if (ytMatch && ytMatch[1]) {
+        const id = ytMatch[1];
+        return {
+          embedUrl: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`,
+          thumbnail: `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+          type: 'youtube',
+          videoId: id
+        };
+      }
+
+      const vimeoMatch = url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/[^\/]*\/videos\/|album\/(?:\d+\/)?video\/|video\/|)(\d+)/);
+      if (vimeoMatch && vimeoMatch[1]) {
+        const id = vimeoMatch[1];
+        return {
+          embedUrl: `https://player.vimeo.com/video/${id}?autoplay=1`,
+          thumbnail: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+          type: 'vimeo',
+          videoId: id
+        };
+      }
+
+      return {
+        embedUrl: url,
+        thumbnail: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+        type: 'generic'
+      };
     }
 
-    function deleteVideoItem(idx) {
-      if (confirm('¿Eliminar este video?')) {
-        APP_CONFIG.videos.splice(idx, 1);
-        renderVideoList();
-        updateOverviewStats();
-        showToast('Video eliminado.');
+    function renderVideoList() {
+      const container = document.getElementById('videoItemsContainer');
+      if (!container) return;
+
+      const videos = (APP_CONFIG.videos && Array.isArray(APP_CONFIG.videos) && APP_CONFIG.videos.length > 0)
+        ? APP_CONFIG.videos
+        : DEFAULT_CONFIG.videos;
+
+      container.innerHTML = videos.map((item, idx) => {
+        return `
+          <div class="item-card" style="display: flex; gap: 14px; align-items: center; border-left: 3px solid ${item.featured ? 'var(--neon-cyan)' : 'var(--border-color)'};">
+            <img src="${item.thumbnail || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80'}" alt="${item.title}" style="width: 90px; height: 55px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #000;" onerror="this.src='https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80'">
+            
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 2px;">
+                <span class="badge-tag">${item.badge || 'TÁCTICO'}</span>
+                <span style="font-size: 11px; color: var(--text-dim);">⏱️ ${item.duration || '04:00'}</span>
+                <span style="font-size: 11px; color: var(--neon-cyan); text-transform: uppercase;">• ${item.category || 'GENERAL'}</span>
+                ${item.featured ? '<span style="font-size: 10px; background: var(--neon-cyan); color: #000; font-weight: 800; padding: 1px 5px; border-radius: 3px;">DESTACADO</span>' : ''}
+              </div>
+              <h4 style="color: #fff; font-size: 13px; font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</h4>
+              <p style="color: var(--text-dim); font-size: 11.5px; margin: 2px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.desc || item.videoUrl}</p>
+            </div>
+
+            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openAdminVideoModal('${item.id}')" title="Editar">✏️ Editar</button>
+              <button type="button" class="btn ${item.featured ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="setAdminFeaturedVideo('${item.id}')" title="Destacar">⭐</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="deleteVideoItem(${idx})" title="Eliminar">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openAdminVideoModal(videoId = null) {
+      if (!APP_CONFIG.videos) APP_CONFIG.videos = [...DEFAULT_CONFIG.videos];
+      let item = videoId ? APP_CONFIG.videos.find(v => v.id === videoId) : null;
+
+      const modalHtml = `
+        <div id="adminVideoModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+          <div style="background: #0d1424; border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 24px; max-width: 540px; width: 100%; box-shadow: 0 0 35px rgba(0,229,255,0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="color: #fff; font-size: 16px; font-weight: 800; font-family: var(--font-display);">${item ? '✏️ EDITAR VIDEO TÁCTICO' : '🎬 AÑADIR NUEVO VIDEO'}</h3>
+              <button onclick="document.getElementById('adminVideoModal').remove()" style="background: none; border: none; color: #fff; font-size: 22px; cursor: pointer;">&times;</button>
+            </div>
+
+            <div style="margin-bottom: 14px; text-align: center; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; display: flex; gap: 12px; align-items: center;">
+              <img id="adminVideoPreviewImg" src="${item ? (item.thumbnail || '') : 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80'}" style="width: 110px; height: 65px; border-radius: 6px; object-fit: cover; background: #000;">
+              <div style="text-align: left; flex: 1;">
+                <div style="font-size: 10px; color: var(--neon-cyan); font-weight: 800;">VISTA PREVIA</div>
+                <div id="adminVideoPreviewTitleText" style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item ? item.title : 'Título del video...'}</div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+              <input type="hidden" id="adminModalVideoId" value="${item ? item.id : ''}">
+              
+              <div>
+                <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 2px;">URL DEL VIDEO (YouTube, YouTube Shorts, Vimeo, MP4) *</label>
+                <input type="text" id="adminModalVideoUrl" class="form-input" placeholder="https://www.youtube.com/watch?v=..." value="${item ? (item.videoUrl || '') : ''}" oninput="handleAdminVideoUrlChange(this.value)" style="font-size: 12px; width: 100%;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 2px;">CATEGORÍA *</label>
+                  <select id="adminModalVideoCategory" class="form-input" style="font-size: 12px; width: 100%;">
+                    <option value="seguridad" ${item && item.category === 'seguridad' ? 'selected' : ''}>Tiro & Seguridad</option>
+                    <option value="primeros-auxilios" ${item && item.category === 'primeros-auxilios' ? 'selected' : ''}>Medicina TCCC</option>
+                    <option value="emergencias" ${item && item.category === 'emergencias' ? 'selected' : ''}>Gestión de Emergencias</option>
+                    <option value="corporativo" ${item && item.category === 'corporativo' ? 'selected' : ''}>Brigadas Empresariales</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 2px;">DURACIÓN</label>
+                  <input type="text" id="adminModalVideoDuration" class="form-input" placeholder="04:30" value="${item ? (item.duration || '04:30') : '04:30'}" style="font-size: 12px; width: 100%;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                <div>
+                  <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 2px;">TÍTULO DEL VIDEO *</label>
+                  <input type="text" id="adminModalVideoTitle" class="form-input" placeholder="Título descriptivo" value="${item ? (item.title || '') : ''}" oninput="document.getElementById('adminVideoPreviewTitleText').textContent = this.value" style="font-size: 12px; width: 100%;">
+                </div>
+                <div>
+                  <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 2px;">INSIGNIA</label>
+                  <input type="text" id="adminModalVideoBadge" class="form-input" placeholder="TÁCTICO" value="${item ? (item.badge || 'TÁCTICO') : 'ENTRENAMIENTO REAL'}" style="font-size: 12px; width: 100%;">
+                </div>
+              </div>
+
+              <div>
+                <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 2px;">MINIATURA (URL o Subir)</label>
+                <div style="display: flex; gap: 6px;">
+                  <input type="text" id="adminModalVideoThumb" class="form-input" placeholder="URL de la miniatura" value="${item ? (item.thumbnail || '') : ''}" oninput="document.getElementById('adminVideoPreviewImg').src = this.value" style="font-size: 12px; flex: 1;">
+                  <label class="btn btn-secondary btn-sm" style="cursor: pointer; padding: 4px 8px; font-size: 11px;">
+                    📁 Subir
+                    <input type="file" accept="image/*" style="display: none;" onchange="handleAdminVideoThumbUpload(event)">
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 2px;">DESCRIPCIÓN OPERATIVA</label>
+                <textarea id="adminModalVideoDesc" class="form-input" rows="2" placeholder="Detalle técnico..." style="font-size: 12px; width: 100%; resize: vertical;">${item ? (item.desc || '') : ''}</textarea>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,229,255,0.08); padding: 6px 10px; border-radius: 6px;">
+                <input type="checkbox" id="adminModalVideoFeatured" ${item && item.featured ? 'checked' : ''} style="cursor: pointer;">
+                <label for="adminModalVideoFeatured" style="color: #fff; font-size: 11.5px; font-weight: 700; cursor: pointer;">⭐ Fijar como Video Destacado en Portada</label>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('adminVideoModal').remove()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" onclick="confirmSaveAdminVideo()">Guardar Video 💾</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const div = document.createElement('div');
+      div.innerHTML = modalHtml;
+      document.body.appendChild(div.firstElementChild);
+    }
+
+    function handleAdminVideoUrlChange(val) {
+      const info = extractVideoInfo(val);
+      const thumbInput = document.getElementById('adminModalVideoThumb');
+      const prevImg = document.getElementById('adminVideoPreviewImg');
+      if (info.thumbnail && (!thumbInput.value || thumbInput.value.includes('youtube.com') || thumbInput.value.includes('unsplash.com'))) {
+        thumbInput.value = info.thumbnail;
+        if (prevImg) prevImg.src = info.thumbnail;
       }
+    }
+
+    async function handleAdminVideoThumbUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const base64 = await compressImageFile(file, 'video_thumb');
+        const thumbInput = document.getElementById('adminModalVideoThumb');
+        const prevImg = document.getElementById('adminVideoPreviewImg');
+        if (thumbInput) thumbInput.value = base64;
+        if (prevImg) prevImg.src = base64;
+        showToast('✓ Miniatura cargada');
+      } catch(e) {
+        showToast('❌ Error al cargar miniatura');
+      }
+    }
+
+    function confirmSaveAdminVideo() {
+      const id = document.getElementById('adminModalVideoId').value;
+      const url = document.getElementById('adminModalVideoUrl').value.trim();
+      const cat = document.getElementById('adminModalVideoCategory').value;
+      const dur = document.getElementById('adminModalVideoDuration').value.trim() || '04:00';
+      const title = document.getElementById('adminModalVideoTitle').value.trim();
+      const badge = document.getElementById('adminModalVideoBadge').value.trim() || 'TÁCTICO';
+      let thumb = document.getElementById('adminModalVideoThumb').value.trim();
+      const desc = document.getElementById('adminModalVideoDesc').value.trim();
+      const featured = document.getElementById('adminModalVideoFeatured').checked;
+
+      if (!url) { alert('Por favor ingresa la URL del video.'); return; }
+      if (!title) { alert('Por favor ingresa un título.'); return; }
+
+      if (!thumb) {
+        thumb = extractVideoInfo(url).thumbnail || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80';
+      }
+
+      if (!APP_CONFIG.videos) APP_CONFIG.videos = [...DEFAULT_CONFIG.videos];
+
+      if (featured) {
+        APP_CONFIG.videos.forEach(v => { v.featured = false; });
+      }
+
+      if (id) {
+        const idx = APP_CONFIG.videos.findIndex(v => v.id === id);
+        if (idx !== -1) {
+          APP_CONFIG.videos[idx] = { id, title, category: cat, badge: badge.toUpperCase(), duration: dur, videoUrl: url, thumbnail: thumb, desc, featured };
+        }
+      } else {
+        const newVid = {
+          id: 'vid-' + Date.now(),
+          title,
+          category: cat,
+          badge: badge.toUpperCase(),
+          duration: dur,
+          videoUrl: url,
+          thumbnail: thumb,
+          desc,
+          featured
+        };
+        if (featured) APP_CONFIG.videos.unshift(newVid);
+        else APP_CONFIG.videos.push(newVid);
+      }
+
+      saveAllChanges(false);
+      renderVideoList();
+      updateOverviewStats();
+      const modal = document.getElementById('adminVideoModal');
+      if (modal) modal.remove();
+      showToast('✓ Video guardado exitosamente.');
+    }
+
+    function setAdminFeaturedVideo(videoId) {
+      if (!APP_CONFIG.videos) APP_CONFIG.videos = [...DEFAULT_CONFIG.videos];
+      APP_CONFIG.videos.forEach(v => {
+        v.featured = (v.id === videoId);
+      });
+      saveAllChanges(false);
+      renderVideoList();
+      showToast('⭐ Video destacado guardado.');
     }
 
     // 5. GUARDAR Y PERSISTIR
