@@ -2861,7 +2861,6 @@
           border-color 0.25s ease,
           box-shadow 0.25s ease,
           opacity 0.25s ease;
-        animation: ringRotate 4s linear infinite;
       }
       .hud-cursor-ring.visible { opacity: 1; }
 
@@ -2875,8 +2874,9 @@
         pointer-events: none;
       }
       .hud-cursor-ring::before {
-        border: 1.5px dashed rgba(0, 229, 255, 0.3);
-        animation: ringRotateReverse 3s linear infinite;
+        border: 1.5px dashed rgba(0, 229, 255, 0.35);
+        animation: ringSpinDash 3s linear infinite;
+        transform-origin: center;
       }
 
       /* ── Corchetes de esquina ── */
@@ -2900,7 +2900,6 @@
         margin: -27px 0 0 -27px;
         border: 2px solid rgba(0, 229, 255, 1);
         box-shadow: 0 0 18px rgba(0,229,255,0.55), inset 0 0 10px rgba(0,229,255,0.18);
-        animation: ringRotate 1.2s linear infinite;
       }
       .hud-cursor-ring.active-lock::before {
         border-color: rgba(255, 0, 127, 0.45);
@@ -2932,11 +2931,13 @@
     }
 
     /* Keyframes de animación del cursor */
-    @keyframes ringRotate {
-      from { transform: translate3d(var(--tx,0),var(--ty,0),0) rotate(0deg); }
       to   { transform: translate3d(var(--tx,0),var(--ty,0),0) rotate(360deg); }
     }
     @keyframes ringRotateReverse {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(-360deg); }
+    }
+    @keyframes ringSpinDash {
       from { transform: rotate(0deg); }
       to   { transform: rotate(-360deg); }
     }

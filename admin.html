@@ -1907,21 +1907,43 @@
     }
 
     function saveAllImagesConfig() {
-      const config = JSON.parse(localStorage.getItem('HT_CONFIG_PROD_V3') || '{}');
-      config.images = config.images || {};
+      const getVal = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+      const imgData = {
+        logo:  getVal('input_img_logo'),
+        hero:  getVal('input_img_hero'),
+        about: getVal('input_img_about'),
+        c1:    getVal('input_img_c1'),
+        c2:    getVal('input_img_c2'),
+        c3:    getVal('input_img_c3'),
+      };
       
-      config.images.logo = document.getElementById('input_img_logo') ? document.getElementById('input_img_logo').value : 'assets/images/img_930ab638.png';
-      config.images.hero = document.getElementById('input_img_hero') ? document.getElementById('input_img_hero').value : 'assets/images/img_7062ad4f.png';
-      config.images.about = document.getElementById('input_img_about') ? document.getElementById('input_img_about').value : 'assets/images/img_3781d6ff.png';
-      config.images.c1 = document.getElementById('input_img_c1') ? document.getElementById('input_img_c1').value : 'assets/images/img_e7a7146c.jpg';
-      config.images.c2 = document.getElementById('input_img_c2') ? document.getElementById('input_img_c2').value : 'assets/images/img_2d71eb4f.jpg';
-      config.images.c3 = document.getElementById('input_img_c3') ? document.getElementById('input_img_c3').value : 'assets/images/img_5391baca.jpg';
-
-      localStorage.setItem('HT_CONFIG_PROD_V3', JSON.stringify(config));
-      localStorage.setItem('HT_CUSTOM_CONFIG_V2', JSON.stringify(config));
-      localStorage.setItem('HT_OWNER_CONFIG_V2', JSON.stringify(config));
-      window.dispatchEvent(new CustomEvent('ht_config_updated'));
-      showToast('✓ Todas las fotos del sistema guardadas y sincronizadas.');
+      // Save image data to IndexedDB (bypasses 5MB localStorage limit)
+      const request = indexedDB.open('HappyTacticalMedia', 1);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('images')) db.createObjectStore('images');
+      };
+      request.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction('images', 'readwrite');
+        const store = tx.objectStore('images');
+        Object.entries(imgData).forEach(([key, val]) => { if (val) store.put(val, key); });
+        tx.oncomplete = () => {
+          // Also update APP_CONFIG.images for text fields that use localStorage safely (URLs only, not base64)
+          if (!APP_CONFIG.images) APP_CONFIG.images = {};
+          Object.entries(imgData).forEach(([key, val]) => {
+            // Only store in localStorage if it's a URL (not base64) to avoid quota errors
+            if (val && !val.startsWith('data:')) APP_CONFIG.images[key] = val;
+          });
+          try {
+            localStorage.setItem('HT_CONFIG_PROD_V3', JSON.stringify(APP_CONFIG));
+          } catch(e) { /* quota exceeded - IndexedDB already saved */ }
+          window.dispatchEvent(new CustomEvent('ht_config_updated'));
+          showToast('✓ Fotos guardadas correctamente (incluyendo imágenes grandes).');
+        };
+        tx.onerror = () => showToast('❌ Error al guardar. Intenta con una imagen más pequeña.');
+      };
+      request.onerror = () => showToast('❌ No se pudo acceder al almacenamiento.');
     }
 
     // Modal para agregar foto a la galería desde dispositivo o URL
