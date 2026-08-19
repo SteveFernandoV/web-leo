@@ -2439,18 +2439,73 @@ Revisa la consola para más detalles.`);
 
     // 5. GUARDAR Y PERSISTIR
 
+    // ========================================================================
+    // PERSISTENCIA GLOBAL CLOUD MULTI-DOCUMENTO // FIREBASE FIRESTORE
+    // ========================================================================
     async function saveToFirebaseCloud(configData) {
-      if (!firestoreDB) return false;
+      if (!firestoreDB) {
+        console.warn('Firebase no inicializado');
+        return false;
+      }
       try {
-        // Deep clone to prevent mutating active memory
-        const cloudData = JSON.parse(JSON.stringify(configData));
-        cloudData.updatedAt = new Date().toISOString();
+        const now = new Date().toISOString();
+        
+        // Doc 1: Config general, textos, videos, fechas
+        const baseConfig = {
+          user: configData.user || 'admin',
+          pin: configData.pin || '7788',
+          whatsApp: configData.whatsApp || '51977331267',
+          whatsAppDisplay: configData.whatsAppDisplay || '+51 977 331 267',
+          phone: configData.phone || '+51 977 331 267',
+          email: configData.email || 'leonardochacon181999@hotmail.com',
+          hudBanner: configData.hudBanner || '',
+          hudSubtitle: configData.hudSubtitle || '',
+          heroBadge: configData.heroBadge || '',
+          heroSub1: configData.heroSub1 || '',
+          heroSub2: configData.heroSub2 || '',
+          heroSub3: configData.heroSub3 || '',
+          heroDesc: configData.heroDesc || '',
+          aboutMissionTitle: configData.aboutMissionTitle || '',
+          aboutMissionDesc: configData.aboutMissionDesc || '',
+          c1Title: configData.c1Title || '',
+          c1Hours: configData.c1Hours || '',
+          c1Desc: configData.c1Desc || '',
+          c2Title: configData.c2Title || '',
+          c2Hours: configData.c2Hours || '',
+          c2Desc: configData.c2Desc || '',
+          c3Title: configData.c3Title || '',
+          c3Hours: configData.c3Hours || '',
+          c3Desc: configData.c3Desc || '',
+          schedule: configData.schedule || [],
+          videos: configData.videos || [],
+          imageMeta: configData.imageMeta || {},
+          updatedAt: now
+        };
 
-        await firestoreDB.collection('happytactical').doc('global_config').set(cloudData, { merge: true });
-        console.log('✓ Configuración guardada en Firebase Cloud Firestore');
+        // Guardar Doc 1
+        await firestoreDB.collection('happytactical').doc('global_config').set(baseConfig, { merge: true });
+
+        // Doc 2: Fotos de Identidad Visual (Logo, Hero, About, Cursos)
+        if (configData.images && Object.keys(configData.images).length > 0) {
+          await firestoreDB.collection('happytactical').doc('global_images').set({
+            images: configData.images,
+            updatedAt: now
+          }, { merge: true });
+        }
+
+        // Doc 3: Galería de fotos operativas
+        if (configData.galleryImages && Array.isArray(configData.galleryImages)) {
+          await firestoreDB.collection('happytactical').doc('global_gallery').set({
+            galleryImages: configData.galleryImages,
+            updatedAt: now
+          }, { merge: true });
+        }
+
+        console.log('✓ Sincronización exitosa en Firebase Cloud Multi-Doc');
         return true;
       } catch (errCloud) {
-        console.warn('Error guardando en Firebase Cloud:', errCloud);
+        console.error('Error guardando en Firebase Cloud:', errCloud);
+        alert('⚠️ Aviso Firebase: ' + (errCloud.message || 'Error de conexión a la nube'));
         return false;
       }
     }
@@ -2458,13 +2513,23 @@ Revisa la consola para más detalles.`);
     async function loadFromFirebaseCloud() {
       if (!firestoreDB) return null;
       try {
-        const doc = await firestoreDB.collection('happytactical').doc('global_config').get();
-        if (doc.exists) {
-          console.log('✓ Datos recuperados de Firebase Cloud Firestore');
-          return doc.data();
+        const [docCfg, docImgs, docGal] = await Promise.all([
+          firestoreDB.collection('happytactical').doc('global_config').get(),
+          firestoreDB.collection('happytactical').doc('global_images').get(),
+          firestoreDB.collection('happytactical').doc('global_gallery').get()
+        ]);
+
+        let merged = {};
+        if (docCfg.exists) merged = Object.assign(merged, docCfg.data());
+        if (docImgs.exists && docImgs.data().images) merged.images = docImgs.data().images;
+        if (docGal.exists && docGal.data().galleryImages) merged.galleryImages = docGal.data().galleryImages;
+
+        if (Object.keys(merged).length > 0) {
+          console.log('✓ Datos globales multi-documento cargados de Firebase Cloud');
+          return merged;
         }
       } catch (errCloud) {
-        console.warn('Error leyendo Firebase Cloud:', errCloud);
+        console.warn('Error leyendo Firebase Cloud multi-doc:', errCloud);
       }
       return null;
     }
