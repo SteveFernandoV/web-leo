@@ -2816,7 +2816,6 @@
         position: fixed;
         top: 0; left: 0;
         width: 8px; height: 8px;
-        margin: -4px 0 0 -4px;
         border-radius: 50%;
         background: #00e5ff;
         pointer-events: none !important;
@@ -2826,13 +2825,15 @@
         will-change: transform;
         transition: opacity 0.25s ease;
         animation: dotPulse 2s ease-in-out infinite;
+        transform: translate3d(-50vw, -50vh, 0);
       }
       /* Núcleo magenta interno */
       .hud-cursor-dot::after {
         content: '';
         position: absolute;
-        top: 2.5px; left: 2.5px;
+        top: 50%; left: 50%;
         width: 3px; height: 3px;
+        margin: -1.5px 0 0 -1.5px;
         background: #ff007f;
         border-radius: 50%;
         box-shadow: 0 0 4px #ff007f;
@@ -2846,7 +2847,6 @@
         position: fixed;
         top: 0; left: 0;
         width: 38px; height: 38px;
-        margin: -19px 0 0 -19px;
         border: 1.5px solid rgba(0, 229, 255, 0.55);
         border-radius: 50%;
         pointer-events: none !important;
@@ -2857,10 +2857,10 @@
         transition:
           width  0.28s cubic-bezier(0.16, 1, 0.3, 1),
           height 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-          margin 0.28s cubic-bezier(0.16, 1, 0.3, 1),
           border-color 0.25s ease,
           box-shadow 0.25s ease,
           opacity 0.25s ease;
+        transform: translate3d(-50vw, -50vh, 0);
       }
       .hud-cursor-ring.visible { opacity: 1; }
 
@@ -2897,7 +2897,6 @@
       /* ── Estado Lock-On (hover sobre botones) ── */
       .hud-cursor-ring.active-lock {
         width: 54px; height: 54px;
-        margin: -27px 0 0 -27px;
         border: 2px solid rgba(0, 229, 255, 1);
         box-shadow: 0 0 18px rgba(0,229,255,0.55), inset 0 0 10px rgba(0,229,255,0.18);
       }
@@ -2931,7 +2930,9 @@
     }
 
     /* Keyframes de animación del cursor */
-      to   { transform: translate3d(var(--tx,0),var(--ty,0),0) rotate(360deg); }
+    @keyframes ringSpinCW {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
     }
     @keyframes ringRotateReverse {
       from { transform: rotate(0deg); }
@@ -5955,6 +5956,11 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
       let isVisible = false;
       let isRafRunning = false;
 
+      // Tamaños del cursor para centrado preciso
+      const DOT_R  = 4;  // radio real del punto (8px / 2)
+      const RING_R = 19; // radio del aro en estado normal (38px / 2)
+      const LOCK_R = 27; // radio del aro en estado lock-on (54px / 2)
+
       // Actualizar posición del cursor instantáneamente
       function onPointerMove(e) {
         mouseX = e.clientX;
@@ -5968,8 +5974,8 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
           ringY = mouseY;
         }
 
-        // El punto sigue al mouse en coordenadas exactas
-        dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+        // El punto sigue al mouse — centrado con offset negativo de su propio radio
+        dot.style.transform = `translate3d(${mouseX - DOT_R}px, ${mouseY - DOT_R}px, 0)`;
 
         if (!isRafRunning) {
           isRafRunning = true;
@@ -5977,18 +5983,17 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
         }
       }
 
-      // Interpolación suave del aro con resorte (lerp = 0.22)
+      // Interpolación suave del aro con resorte (lerp = 0.18)
       function updateRingPosition() {
-        ringX += (mouseX - ringX) * 0.22;
-        ringY += (mouseY - ringY) * 0.22;
+        ringX += (mouseX - ringX) * 0.18;
+        ringY += (mouseY - ringY) * 0.18;
 
-        // Position via CSS custom properties to not conflict with rotation animation
-        ring.style.setProperty('--tx', ringX + 'px');
-        ring.style.setProperty('--ty', ringY + 'px');
-        ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0)`;
+        // Detectar si está en modo lock para ajustar el radio de centrado
+        const r = ring.classList.contains('active-lock') ? LOCK_R : RING_R;
+        ring.style.transform = `translate3d(${ringX - r}px, ${ringY - r}px, 0)`;
 
         const dist = Math.hypot(mouseX - ringX, mouseY - ringY);
-        if (dist > 0.1 || isVisible) {
+        if (dist > 0.08 || isVisible) {
           requestAnimationFrame(updateRingPosition);
         } else {
           isRafRunning = false;
