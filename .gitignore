@@ -5,3 +5,9 @@ node_modules/
 *.pyc
 __pycache__/
 test_results/
+scratch/
+_backup_soporte_estable/
+test_*.html
+*.png
+*.jpg
+*.tmp

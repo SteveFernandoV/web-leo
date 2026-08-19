@@ -672,7 +672,7 @@
       transform: translateY(100px);
       opacity: 0;
       transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 10000;
+      z-index: 10000000;
     }
     .toast.show {
       transform: translateY(0);
@@ -1228,7 +1228,7 @@
               <h2 class="module-title">GALERÍA DE FOTOS <span>(PHOTO STREAM)</span></h2>
               <p class="module-desc">Gestiona las imágenes en alta resolución del flujo visual continuo.</p>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" onclick="addNewGalleryItem()">+ Añadir Foto 📸</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="openAdminGalleryModal()">+ Añadir Foto 📸</button>
           </div>
 
           <div class="interactive-card">
@@ -1427,39 +1427,48 @@
         const reader = new FileReader();
 
         reader.onload = (e) => {
+          const rawData = e.target.result;
           const img = new Image();
           img.onload = () => {
-            let w = img.width;
-            let h = img.height;
-            if (w > maxDimension || h > maxDimension) {
-              if (w > h) {
-                h = Math.round((h * maxDimension) / w);
-                w = maxDimension;
-              } else {
-                w = Math.round((w * maxDimension) / h);
-                h = maxDimension;
+            try {
+              let w = img.width;
+              let h = img.height;
+              if (w > maxDimension || h > maxDimension) {
+                if (w > h) {
+                  h = Math.round((h * maxDimension) / w);
+                  w = maxDimension;
+                } else {
+                  w = Math.round((w * maxDimension) / h);
+                  h = maxDimension;
+                }
               }
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
 
-            if (isLogo) {
-              ctx.clearRect(0, 0, w, h);
-              ctx.drawImage(img, 0, 0, w, h);
-              resolve(canvas.toDataURL('image/png'));
-            } else {
-              ctx.fillStyle = '#07090f';
-              ctx.fillRect(0, 0, w, h);
-              ctx.drawImage(img, 0, 0, w, h);
-              resolve(canvas.toDataURL('image/jpeg', quality));
+              if (isLogo) {
+                ctx.clearRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/png'));
+              } else {
+                ctx.fillStyle = '#07090f';
+                ctx.fillRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+              }
+            } catch (errCanvas) {
+              // Fallback directly to raw data URL if canvas rendering fails
+              resolve(rawData);
             }
           };
-          img.onerror = () => reject(new Error('Error al decodificar imagen'));
-          img.src = e.target.result;
+          img.onerror = () => {
+            // Fallback to raw data url if decode has issues
+            resolve(rawData);
+          };
+          img.src = rawData;
         };
-        reader.onerror = () => reject(new Error('Error al leer archivo'));
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo seleccionado.'));
         reader.readAsDataURL(file);
       });
     }
@@ -1634,6 +1643,16 @@
         }
       }
 
+      // Hydrate custom gallery images from IndexedDB
+      if (APP_CONFIG.galleryImages && Array.isArray(APP_CONFIG.galleryImages)) {
+        for (const imgItem of APP_CONFIG.galleryImages) {
+          if (imgItem.id) {
+            const dbImg = await getImageFromDB(imgItem.id);
+            if (dbImg) imgItem.url = dbImg;
+          }
+        }
+      }
+
       populateForm();
     }
 
@@ -1729,19 +1748,54 @@
       `).join('');
     }
 
-    function renderGalleryList() {
+    async function renderGalleryList() {
       const container = document.getElementById('galleryItemsContainer');
       if (!container) return;
-      const list = APP_CONFIG.galleryImages || [];
+      if (!APP_CONFIG.galleryImages) APP_CONFIG.galleryImages = [...DEFAULT_CONFIG.galleryImages];
+      const list = APP_CONFIG.galleryImages;
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 30px 20px; color: var(--text-muted);">
+            <div style="font-size: 32px; margin-bottom: 8px;">📸</div>
+            <div style="font-family: var(--font-display); font-size: 14px; color: #fff;">NO HAY FOTOGRAFÍAS EN LA GALERÍA</div>
+            <p style="font-size: 12px; margin-top: 4px;">Sube tus propias fotos operativas para mostrarlas en el flujo visual continuo.</p>
+            <button type="button" class="btn btn-primary btn-sm" onclick="openAdminGalleryModal()" style="margin-top: 14px;">+ Subir Primera Foto 📸</button>
+          </div>
+        `;
+        return;
+      }
+
+      // Ensure all items have valid image source
+      for (const item of list) {
+        if (item.id && (!item.url || item.url.startsWith('HappyTacticalMediaDB:'))) {
+          const dbSrc = await getImageFromDB(item.id);
+          if (dbSrc) item.url = dbSrc;
+        }
+      }
 
       container.innerHTML = list.map((item, idx) => `
-        <div class="item-row">
-          <img src="${item.url}" alt="${item.title}" style="width: 54px; height: 38px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);">
-          <div style="flex:1;">
-            <div style="font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: #fff;">${item.title}</div>
-            <div style="font-size: 11.5px; color: var(--text-dim);"><span class="badge-tag">${item.badge}</span> 📍 ${item.location}</div>
+        <div class="item-row" style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; margin-bottom: 10px; transition: all 0.2s ease;">
+          <div style="position: relative; width: 78px; height: 52px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-cyan); background: #000;">
+            <img src="${item.url || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80'}" alt="${item.title}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80'">
+            <span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.8); color: var(--neon-cyan); font-size: 8px; font-weight: 800; padding: 1px 3px; border-radius: 2px;">#0${idx + 1}</span>
           </div>
-          <button type="button" class="btn btn-danger btn-sm" onclick="deleteGalleryItem(${idx})">Eliminar 🗑️</button>
+          
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${item.title}
+            </div>
+            <div style="font-size: 11px; color: var(--text-dim); margin-top: 3px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <span class="badge-tag" style="background: rgba(0,229,255,0.12); color: var(--neon-cyan); border: 1px solid var(--border-cyan); padding: 1px 6px; border-radius: 3px; font-size: 9.5px; font-weight: 800;">${item.badge || 'TÁCTICO'}</span>
+              <span>📍 ${item.location || 'Lima, Perú'}</span>
+              ${item.desc ? `<span style="color: var(--text-muted); font-size: 10.5px;">• ${item.desc.substring(0, 45)}...</span>` : ''}
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="openAdminGalleryModal('${item.id || idx}')" title="Editar Foto">✏️ Editar</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteGalleryItem(${idx})" title="Eliminar Foto">🗑️ Eliminar</button>
+          </div>
         </div>
       `).join('');
     }
@@ -1799,37 +1853,279 @@
       }
     }
 
-    function addNewGalleryItem() {
-      const title = prompt('Título de la Foto:');
-      if (!title) return;
-      const url = prompt('URL de la Imagen:', 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80');
-      if (!url) return;
 
-      APP_CONFIG.galleryImages.push({
-        id: 'gal-' + Date.now(),
-        title: title,
-        badge: 'TÁCTICO',
-        location: 'Lima, Perú',
-        url: url
-      });
-
-      renderGalleryList();
-      updateOverviewStats();
-      showToast('Foto agregada a la galería.');
-    }
-
-    function deleteGalleryItem(idx) {
-      if (confirm('¿Eliminar esta foto?')) {
-        APP_CONFIG.galleryImages.splice(idx, 1);
-        renderGalleryList();
-        updateOverviewStats();
-        showToast('Foto eliminada.');
-      }
-    }
 
     // ========================================================================
     // MOTOR DE VIDEOTECA EN PANEL DE ADMINISTRACIÓN
     // ========================================================================
+    
+    // ========================================================================
+    // MOTOR DE GESTIÓN Y SUBIDA DE FOTOS EN GALERÍA (ADMIN)
+    // ========================================================================
+    function openAdminGalleryModal(galleryId = null) {
+      if (!APP_CONFIG.galleryImages) APP_CONFIG.galleryImages = [...DEFAULT_CONFIG.galleryImages];
+      let item = null;
+      if (galleryId !== null) {
+        item = typeof galleryId === 'string' && galleryId.startsWith('gal-')
+          ? APP_CONFIG.galleryImages.find(g => g.id === galleryId)
+          : APP_CONFIG.galleryImages[galleryId];
+      }
+
+      const existingModal = document.getElementById('adminGalleryModal');
+      if (existingModal) existingModal.remove();
+
+      const defaultPreview = item ? (item.url || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80') : 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80';
+
+      const modalHtml = `
+        <div id="adminGalleryModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+          <div style="background: #0d1424; border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 24px; max-width: 580px; width: 100%; box-shadow: 0 0 35px rgba(0,229,255,0.25); max-height: 90vh; overflow-y: auto;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="color: #fff; font-size: 16px; font-weight: 800; font-family: var(--font-display);">
+                ${item ? '✏️ EDITAR FOTOGRAFÍA OPERATIVA' : '📸 AÑADIR NUEVA FOTO A LA GALERÍA'}
+              </h3>
+              <button onclick="document.getElementById('adminGalleryModal').remove()" style="background: none; border: none; color: #fff; font-size: 22px; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Preview Card -->
+            <div style="margin-bottom: 16px; position: relative; border-radius: 8px; overflow: hidden; border: 1.5px dashed var(--border-cyan); background: #050811; text-align: center; padding: 12px;">
+              <div style="max-height: 220px; overflow: hidden; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #000;">
+                <img id="adminGalleryPreviewImg" src="${defaultPreview}" style="max-height: 200px; width: auto; max-width: 100%; object-fit: contain; border-radius: 6px;">
+              </div>
+              <div style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('adminGalleryFileInput').click()" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                  📁 Subir Foto desde este Dispositivo
+                </button>
+                <input type="file" id="adminGalleryFileInput" accept="image/*" style="position: absolute; opacity: 0; width: 0.1px; height: 0.1px; overflow: hidden; z-index: -1;" onchange="handleAdminGalleryPhotoUpload(event)">
+                <div id="adminGalleryUploadStatus" style="font-size: 11.5px; font-weight: 700; min-height: 18px;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+              <input type="hidden" id="adminModalGalleryId" value="${item ? (item.id || '') : ''}">
+              
+              <div>
+                <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 4px;">URL DE IMAGEN (Opcional si subes desde tu equipo)</label>
+                <input type="text" id="adminModalGalleryUrl" class="form-input" placeholder="https://..." value="${item ? (item.url || '') : ''}" oninput="document.getElementById('adminGalleryPreviewImg').src = this.value" style="font-size: 12px; width: 100%;">
+              </div>
+
+              <div>
+                <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 4px;">TÍTULO OPERATIVO DE LA FOTOGRAFÍA</label>
+                <input type="text" id="adminModalGalleryTitle" class="form-input" placeholder="ej: Prácticas de Tiro Defensivo en Polígono" value="${item ? (item.title || '') : ''}" style="font-size: 12px; width: 100%;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 4px;">INSIGNIA / CATEGORÍA</label>
+                  <input type="text" id="adminModalGalleryBadge" class="form-input" placeholder="TÁCTICO" value="${item ? (item.badge || 'TÁCTICO') : 'TÁCTICO'}" style="font-size: 12px; width: 100%;">
+                </div>
+                <div>
+                  <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 4px;">UBICACIÓN / SEDE</label>
+                  <input type="text" id="adminModalGalleryLocation" class="form-input" placeholder="Lima, Perú • Sede Central" value="${item ? (item.location || 'Lima, Perú') : 'Lima, Perú'}" style="font-size: 12px; width: 100%;">
+                </div>
+              </div>
+
+              <!-- Quick category chips -->
+              <div>
+                <label style="font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 4px;">CATEGORÍAS RÁPIDAS (Click para elegir):</label>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  ${['TÁCTICO', 'POLÍGONO', 'MEDICINA TCCC', 'EMERGENCIAS', 'BRIGADAS', 'NOCTURNO', 'RESCATE'].map(cat => `
+                    <button type="button" onclick="document.getElementById('adminModalGalleryBadge').value = '${cat}'" style="background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.25); color: #fff; font-size: 9.5px; padding: 3px 8px; border-radius: 3px; cursor: pointer;">
+                      ${cat}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div>
+                <label style="font-size: 11px; color: var(--neon-cyan); font-weight: 700; display: block; margin-bottom: 4px;">DESCRIPCIÓN / REGISTRO TÁCTICO</label>
+                <textarea id="adminModalGalleryDesc" class="form-input" rows="2" placeholder="Detalle operativo de la fotografía..." style="font-size: 12px; width: 100%; resize: vertical;">${item ? (item.desc || '') : ''}</textarea>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('adminGalleryModal').remove()">Cancelar</button>
+              <button type="button" id="adminSaveGalleryBtn" class="btn btn-primary btn-sm" onclick="confirmSaveAdminGalleryPhoto()">GUARDAR EN GALERÍA 💾</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    async function handleAdminGalleryPhotoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const urlInput = document.getElementById('adminModalGalleryUrl');
+      const prevImg = document.getElementById('adminGalleryPreviewImg');
+      const titleInput = document.getElementById('adminModalGalleryTitle');
+      const statusBox = document.getElementById('adminGalleryUploadStatus');
+
+      if (statusBox) {
+        statusBox.innerHTML = '<span style="color: var(--neon-cyan);">⏳ Procesando y optimizando imagen...</span>';
+      }
+
+      try {
+        const base64 = await compressImageFile(file, 'gallery_photo');
+        if (urlInput) urlInput.value = base64;
+        if (prevImg) prevImg.src = base64;
+
+        if (titleInput && !titleInput.value.trim()) {
+          const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+          titleInput.value = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+        }
+
+        if (statusBox) {
+          statusBox.innerHTML = '<span style="color: var(--neon-green);">✓ Foto lista para guardar</span>';
+        }
+        showToast('✓ Imagen cargada correctamente');
+      } catch(e) {
+        console.error('Error procesando imagen:', e);
+        if (statusBox) {
+          statusBox.innerHTML = '<span style="color: #ff5252;">❌ Error al procesar archivo</span>';
+        }
+        alert('❌ Error al procesar el archivo seleccionado: ' + e.message);
+      }
+    }
+
+    async function confirmSaveAdminGalleryPhoto() {
+      const saveBtn = document.getElementById('adminSaveGalleryBtn');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'GUARDANDO... ⏳';
+      }
+
+      try {
+        const id = document.getElementById('adminModalGalleryId').value;
+        const url = document.getElementById('adminModalGalleryUrl').value.trim();
+        const rawTitle = document.getElementById('adminModalGalleryTitle').value.trim();
+        const badge = (document.getElementById('adminModalGalleryBadge').value.trim() || 'TÁCTICO').toUpperCase();
+        const location = document.getElementById('adminModalGalleryLocation').value.trim() || 'Lima, Perú';
+        const desc = document.getElementById('adminModalGalleryDesc').value.trim();
+
+        if (!url) {
+          if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'GUARDAR EN GALERÍA 💾'; }
+          alert('⚠️ Por favor sube una foto desde tu dispositivo o ingresa una URL de imagen.');
+          return;
+        }
+
+        if (!APP_CONFIG.galleryImages) APP_CONFIG.galleryImages = [...DEFAULT_CONFIG.galleryImages];
+
+        const title = rawTitle || `Fotografía Operativa #${APP_CONFIG.galleryImages.length + 1}`;
+        const photoId = id || ('gal-' + Date.now());
+        const photoItem = {
+          id: photoId,
+          title,
+          badge,
+          location,
+          url,
+          desc: desc || `Registro fotográfico oficial: ${title}`,
+          createdAt: new Date().toLocaleDateString('es-PE')
+        };
+
+        if (id) {
+          const idx = APP_CONFIG.galleryImages.findIndex(g => g.id === id);
+          if (idx !== -1) {
+            APP_CONFIG.galleryImages[idx] = photoItem;
+          } else {
+            APP_CONFIG.galleryImages.push(photoItem);
+          }
+        } else {
+          APP_CONFIG.galleryImages.push(photoItem);
+        }
+
+        // 1. Guardar en IndexedDB para persistencia HD
+        let dbSaved = true;
+        if (url.startsWith('data:')) {
+          dbSaved = await saveImageToDB(photoId, url);
+        }
+
+        // 2. Guardar en LocalStorage con blindaje de cuota
+        let localSaved = false;
+        let saveError = null;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
+          localSaved = true;
+        } catch (eStorage) {
+          try {
+            const sanitized = JSON.parse(JSON.stringify(APP_CONFIG));
+            if (sanitized.galleryImages && Array.isArray(sanitized.galleryImages)) {
+              sanitized.galleryImages.forEach(img => {
+                if (img.url && img.url.startsWith('data:') && img.url.length > 500) {
+                  img.url = 'HappyTacticalMediaDB:' + img.id;
+                }
+              });
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+            localSaved = true;
+          } catch (err2) {
+            saveError = err2.message;
+          }
+        }
+
+        // 3. Sincronizar vía BroadcastChannel
+        if (syncChannel) {
+          try {
+            syncChannel.postMessage({ type: 'config_updated' });
+            syncChannel.postMessage({ type: 'gallery_updated' });
+            syncChannel.postMessage({ type: 'image_updated', key: photoId });
+          } catch(e) {}
+        }
+
+        // 4. Actualizar vistas
+        await renderGalleryList();
+        updateOverviewStats();
+
+        // 5. Cerrar modal
+        const modal = document.getElementById('adminGalleryModal');
+        if (modal) modal.remove();
+
+        // 6. Mensaje explícito de estado conforme solicitado
+        if (localSaved || dbSaved) {
+          showToast(`✓ FOTO "${title}" GUARDADA Y SINCRONIZADA CONFORME 💾`);
+          alert(`✅ ¡GUARDADO CONFORME!
+
+La fotografía "${title}" se guardó y sincronizó correctamente en la base de datos y en el riel de la web.`);
+        } else {
+          showToast(`❌ ERROR AL GUARDAR: ${saveError || 'Falla de almacenamiento'}`);
+          alert(`❌ ERROR AL GUARDAR:
+
+No se pudo guardar la fotografía en el almacenamiento local.
+Detalle: ${saveError || 'Error desconocido'}`);
+        }
+      } catch (errGlobal) {
+        console.error('Error global en confirmSaveAdminGalleryPhoto:', errGlobal);
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'GUARDAR EN GALERÍA 💾'; }
+        alert(`❌ ERROR AL GUARDAR FOTOGRAFÍA:
+
+${errGlobal.message}
+
+Revisa la consola para más detalles.`);
+      }
+    }
+
+    async function deleteGalleryItem(idx) {
+      if (!APP_CONFIG.galleryImages) return;
+      if (confirm('¿Estás seguro de eliminar esta fotografía de la galería?')) {
+        const deleted = APP_CONFIG.galleryImages.splice(idx, 1)[0];
+        if (deleted && deleted.id) {
+          try {
+            const db = await getDB();
+            if (db) {
+              const tx = db.transaction(DB_STORE, 'readwrite');
+              tx.objectStore(DB_STORE).delete(deleted.id);
+            }
+          } catch(e) {}
+        }
+        saveAllChanges(false);
+        await renderGalleryList();
+        updateOverviewStats();
+        showToast('✓ Fotografía eliminada');
+        alert('✓ Fotografía eliminada de la galería.');
+      }
+    }
+    
     function extractVideoInfo(url) {
       if (!url) return { embedUrl: '', thumbnail: '', type: 'unknown' };
       url = url.trim();
@@ -2128,13 +2424,36 @@
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
         if (syncChannel) {
-          try { syncChannel.postMessage({ type: 'config_updated' }); } catch(e) {}
+          try {
+            syncChannel.postMessage({ type: 'config_updated' });
+            syncChannel.postMessage({ type: 'gallery_updated' });
+          } catch(e) {}
         }
         const userDisplay = document.getElementById('displayUsername');
         if (userDisplay) userDisplay.textContent = APP_CONFIG.user;
-        showToast('¡Cambios guardados y sincronizados con index.html!');
+        if (showFeedback) showToast('¡Cambios guardados y sincronizados con index.html!');
       } catch (e) {
-        alert('Error al guardar: ' + e.message);
+        // Quota fallback: if localStorage quota exceeded, sanitize heavy base64 strings in localStorage copy while keeping them safe in IndexedDB
+        try {
+          const sanitized = JSON.parse(JSON.stringify(APP_CONFIG));
+          if (sanitized.galleryImages && Array.isArray(sanitized.galleryImages)) {
+            sanitized.galleryImages.forEach(img => {
+              if (img.url && img.url.startsWith('data:') && img.url.length > 500) {
+                img.url = 'HappyTacticalMediaDB:' + img.id;
+              }
+            });
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+          if (syncChannel) {
+            try {
+              syncChannel.postMessage({ type: 'config_updated' });
+              syncChannel.postMessage({ type: 'gallery_updated' });
+            } catch(e) {}
+          }
+          if (showFeedback) showToast('¡Cambios guardados y sincronizados con index.html!');
+        } catch (err2) {
+          if (showFeedback) alert('Error al guardar en almacenamiento local: ' + err2.message);
+        }
       }
     }
 
@@ -2380,6 +2699,11 @@
       showToast('✓ Nueva foto agregada a la galería.');
     }
     
-</script>
+
+    // Aliases para compatibilidad global
+    function saveConfig(showFeedback = false) { return saveAllChanges(showFeedback); }
+    function saveConfiguration(showFeedback = false) { return saveAllChanges(showFeedback); }
+    
+  </script>
 </body>
 </html>

@@ -80,7 +80,6 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      perspective: 1400px;
     }
 
     /* Scrollbars */
@@ -2684,10 +2683,340 @@
       from { transform: rotate(0deg); }
       to   { transform: rotate(-360deg); }
     }
-      50%       { transform: scale(1.5); opacity: 0.7; }
-    }
     
-</style>
+
+    /* ========================================================================
+       WIDGET ASISTENTE VIRTUAL TÁCTICO HUD (ALPHA-1)
+       ======================================================================== */
+    .tactical-chat-wrap {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 99999;
+      font-family: var(--font-body, 'Inter', sans-serif);
+    }
+
+    .tactical-chat-launcher {
+      position: relative;
+      background: linear-gradient(135deg, #0d1424 0%, #060913 100%);
+      border: 1.5px solid var(--neon-cyan, #00e5ff);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 229, 255, 0.35);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tactical-chat-launcher:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 229, 255, 0.55);
+      border-color: #fff;
+    }
+
+    .chat-radar-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 34px;
+      border: 1px solid var(--neon-cyan, #00e5ff);
+      opacity: 0.8;
+      animation: chatPulse 2.5s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes chatPulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.18); opacity: 0; }
+    }
+
+    .chat-launcher-badge {
+      font-family: var(--font-display, 'Orbitron', sans-serif);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--neon-cyan, #00e5ff);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chat-launcher-badge::before {
+      content: '';
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      background: var(--neon-green, #00e676);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--neon-green, #00e676);
+    }
+
+    .chat-launcher-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    /* Chat Window */
+    .tactical-chat-window {
+      position: absolute;
+      bottom: 60px;
+      right: 0;
+      width: 380px;
+      max-width: calc(100vw - 32px);
+      height: 520px;
+      max-height: calc(100vh - 120px);
+      background: rgba(8, 14, 28, 0.96);
+      border: 1.5px solid var(--neon-cyan, #00e5ff);
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 229, 255, 0.25);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: chatSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes chatSlideUp {
+      from { opacity: 0; transform: translateY(20px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .tactical-chat-header {
+      background: rgba(13, 20, 36, 0.9);
+      border-bottom: 1px solid rgba(0, 229, 255, 0.25);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tactical-chat-header-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-live-indicator {
+      width: 10px;
+      height: 10px;
+      background: var(--neon-green, #00e676);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--neon-green, #00e676);
+      animation: pulseGreen 1.8s infinite;
+    }
+
+    .chat-agent-title {
+      font-family: var(--font-display, 'Orbitron', sans-serif);
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+
+    .chat-agent-status {
+      font-size: 9.5px;
+      color: var(--neon-cyan, #00e5ff);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .chat-close-trigger {
+      background: none;
+      border: none;
+      color: var(--text-dim, #8f9ba8);
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 4px;
+      transition: color 0.2s;
+    }
+
+    .chat-close-trigger:hover {
+      color: #ff5252;
+    }
+
+    .tactical-chat-body {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: radial-gradient(circle at top right, rgba(0, 229, 255, 0.04), transparent 60%);
+    }
+
+    .chat-msg {
+      max-width: 86%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      animation: msgFadeIn 0.3s ease;
+    }
+
+    @keyframes msgFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-msg.bot-msg {
+      align-self: flex-start;
+    }
+
+    .chat-msg.user-msg {
+      align-self: flex-end;
+    }
+
+    .msg-telemetry {
+      font-size: 8.5px;
+      font-family: var(--font-display, 'Orbitron', sans-serif);
+      color: var(--neon-cyan, #00e5ff);
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+
+    .user-msg .msg-telemetry {
+      color: var(--neon-magenta, #ff0055);
+      text-align: right;
+    }
+
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #fff;
+    }
+
+    .bot-msg .msg-bubble {
+      background: rgba(13, 20, 36, 0.85);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-top-left-radius: 2px;
+    }
+
+    .user-msg .msg-bubble {
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      border-top-right-radius: 2px;
+    }
+
+    .msg-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      background: var(--neon-cyan, #00e5ff);
+      color: #000 !important;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: var(--font-display, 'Orbitron', sans-serif);
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .msg-cta-btn:hover {
+      background: #fff;
+      transform: translateY(-1px);
+    }
+
+    .tactical-chat-chips {
+      padding: 8px 12px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      background: rgba(6, 10, 20, 0.9);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      scrollbar-width: thin;
+    }
+
+    .chat-chip {
+      background: rgba(0, 229, 255, 0.07);
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      color: #fff;
+      font-size: 10.5px;
+      padding: 5px 9px;
+      border-radius: 16px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-body, sans-serif);
+    }
+
+    .chat-chip:hover {
+      background: rgba(0, 229, 255, 0.2);
+      border-color: var(--neon-cyan, #00e5ff);
+      color: var(--neon-cyan, #00e5ff);
+    }
+
+    .chat-chip-whatsapp {
+      background: rgba(0, 230, 118, 0.12);
+      border-color: rgba(0, 230, 118, 0.4);
+      color: #a7ffeb;
+    }
+
+    .tactical-chat-input-row {
+      padding: 10px 12px;
+      background: #050811;
+      border-top: 1px solid rgba(0, 229, 255, 0.2);
+      display: flex;
+      gap: 8px;
+    }
+
+    .tactical-chat-input-row input {
+      flex: 1;
+      background: rgba(13, 20, 36, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: var(--font-body, sans-serif);
+      outline: none;
+    }
+
+    .tactical-chat-input-row input:focus {
+      border-color: var(--neon-cyan, #00e5ff);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+    }
+
+    .tactical-chat-input-row button {
+      background: var(--neon-cyan, #00e5ff);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-family: var(--font-display, 'Orbitron', sans-serif);
+      font-weight: 800;
+      font-size: 10.5px;
+      padding: 0 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tactical-chat-input-row button:hover {
+      background: #fff;
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+    }
+
+    @media (max-width: 600px) {
+      .tactical-chat-wrap {
+        bottom: 16px;
+        right: 16px;
+      }
+      .tactical-chat-window {
+        bottom: 56px;
+        right: 0;
+        width: calc(100vw - 32px);
+        height: 480px;
+      }
+    }
+
+  </style>
 </head>
 <body>
 
@@ -3121,6 +3450,13 @@
             <div class="gallery-stream-track reverse" id="galleryTrack2">
               <!-- Rendered dynamically by JavaScript -->
             </div>
+          </div>
+
+          <!-- Acceso Rápido del Propietario -->
+          <div style="text-align: center; margin-bottom: 18px;">
+            <a href="admin.html" class="btn btn-secondary btn-sm" style="border-color: rgba(0,229,255,0.4); font-size: 11.5px; padding: 8px 18px; letter-spacing: 0.8px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+              <span>⚙️</span> CENTRO DE MANDO: GESTIONAR GALERÍA &amp; + SUBIR FOTOS 📸 ↗
+            </a>
           </div>
 
           <!-- Barra de Control HUD de Rotación -->
@@ -3938,6 +4274,16 @@
         }
       }
 
+      // Hydrate gallery images from IndexedDB
+      if (HT_CONFIG.galleryImages && Array.isArray(HT_CONFIG.galleryImages)) {
+        for (const imgItem of HT_CONFIG.galleryImages) {
+          if (imgItem.id) {
+            const dbImg = await getImageFromDB(imgItem.id);
+            if (dbImg) imgItem.url = dbImg;
+          }
+        }
+      }
+
       applyConfigToDOM();
     }
 
@@ -4393,7 +4739,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
     // ========================================================================
     let isGalleryPaused = false;
 
-    function renderGalleryStream() {
+    async function renderGalleryStream() {
       const track1 = document.getElementById('galleryTrack1');
       const track2 = document.getElementById('galleryTrack2');
       if (!track1 || !track2) return;
@@ -4402,13 +4748,21 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
         ? HT_CONFIG.galleryImages
         : DEFAULT_CONFIG.galleryImages;
 
+      // Ensure any DB-stored image keys are resolved
+      for (const item of imgList) {
+        if (item.id && (!item.url || item.url.startsWith('HappyTacticalMediaDB:'))) {
+          const dbSrc = await getImageFromDB(item.id);
+          if (dbSrc) item.url = dbSrc;
+        }
+      }
+
       // Duplicate list to achieve continuous seamless loop
       const doubled = [...imgList, ...imgList];
 
       const makeCardHtml = (item, idx) => `
         <div class="gallery-stream-item" onclick="openTacticalLightbox('${item.id || 'gal-' + idx}')" role="button" tabindex="0" aria-label="Ver imagen ampliada: ${item.title}">
           <span class="gallery-telemetry-tag">CAM-0${(idx % 8) + 1} // HD</span>
-          <img src="${item.url}" alt="${item.title}" class="gallery-stream-img" loading="lazy">
+          <img src="${item.url || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80'}" alt="${item.title}" class="gallery-stream-img" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80'">
           <div class="gallery-stream-overlay">
             <span class="gallery-badge">${item.badge || 'TÁCTICO'}</span>
             <div>
@@ -4459,7 +4813,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
       }
     }
 
-    function openTacticalLightbox(imgId) {
+    async function openTacticalLightbox(imgId) {
       const imgList = (HT_CONFIG.galleryImages && Array.isArray(HT_CONFIG.galleryImages) && HT_CONFIG.galleryImages.length > 0)
         ? HT_CONFIG.galleryImages
         : DEFAULT_CONFIG.galleryImages;
@@ -4474,7 +4828,13 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
       const desc = document.getElementById('lightboxDesc');
       const waBtn = document.getElementById('lightboxWhatsAppBtn');
 
-      if (modalImg) modalImg.src = item.url;
+      let resolvedSrc = item.url;
+      if (item.id && (!resolvedSrc || resolvedSrc.startsWith('HappyTacticalMediaDB:'))) {
+        const dbSrc = await getImageFromDB(item.id);
+        if (dbSrc) resolvedSrc = dbSrc;
+      }
+
+      if (modalImg) modalImg.src = resolvedSrc || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80';
       if (badge) badge.textContent = `[ ${item.badge || 'EVIDENCIA TÁCTICA'} // ${item.location || 'LIMA'} ]`;
       if (title) title.textContent = item.title;
       if (desc) desc.textContent = item.desc || 'Registro oficial de actividades y entrenamiento de alta intensidad Happy Tactical.';
@@ -5633,7 +5993,128 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
       });
     })();
     
-</script>
+
+    // ========================================================================
+    // MOTOR ASISTENTE VIRTUAL TÁCTICO (ALPHA-1) & ENRUTAMIENTO INTELIGENTE
+    // ========================================================================
+    let isTacticalChatOpen = false;
+
+    function toggleTacticalChat() {
+      const win = document.getElementById('tacticalChatWindow');
+      if (!win) return;
+      isTacticalChatOpen = !isTacticalChatOpen;
+      win.style.display = isTacticalChatOpen ? 'flex' : 'none';
+      if (isTacticalChatOpen) {
+        const input = document.getElementById('tacticalChatInput');
+        if (input) setTimeout(() => input.focus(), 150);
+        scrollChatToBottom();
+      }
+    }
+
+    function scrollChatToBottom() {
+      const body = document.getElementById('tacticalChatMessages');
+      if (body) body.scrollTop = body.scrollHeight;
+    }
+
+    function appendChatMessage(sender, text, ctaUrl = null, ctaText = null) {
+      const body = document.getElementById('tacticalChatMessages');
+      if (!body) return;
+
+      const time = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `chat-msg ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
+
+      let ctaHtml = '';
+      if (ctaUrl && ctaText) {
+        ctaHtml = `<a href="${ctaUrl}" target="_blank" rel="noopener noreferrer" class="msg-cta-btn">${ctaText} ↗</a>`;
+      }
+
+      msgDiv.innerHTML = `
+        <div class="msg-telemetry">[${sender === 'user' ? 'OPERADOR' : 'ALPHA-1'} // ${time}]</div>
+        <div class="msg-bubble">${text}${ctaHtml}</div>
+      `;
+
+      body.appendChild(msgDiv);
+      scrollChatToBottom();
+    }
+
+    function handleTacticalChip(type) {
+      const cleanWa = (HT_CONFIG.whatsApp || '51977331267').replace(/\D/g, '');
+
+      if (type === 'sucamec') {
+        appendChatMessage('user', 'Quiero información sobre la Licencia SUCAMEC L10.');
+        setTimeout(() => {
+          const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent('Hola Happy Tactical, solicito asesoría completa para tramitar mi Licencia SUCAMEC L10 (Defensa Personal / Tiro).')}`;
+          appendChatMessage('bot', 'Te preparamos integralmente para aprobar el <strong>examen teórico y de tiro ante SUCAMEC</strong> en polígono oficial con instructores calificados.', waUrl, '📲 SOLICITAR ASESORÍA SUCAMEC');
+        }, 400);
+      } else if (type === 'tiro') {
+        appendChatMessage('user', 'Información sobre el Curso de Tiro Defensivo.');
+        setTimeout(() => {
+          const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent('Hola Happy Tactical, deseo información sobre el Curso de Tiro Defensivo y Reacción Armada.')}`;
+          appendChatMessage('bot', 'Entrenamos en fundamentos de tiro reactivo, desenfunde rápido, solución de fallas mecánicas y tiro en movimiento bajo estrés.', waUrl, '🎯 VER PRÓXIMAS FECHAS');
+        }, 400);
+      } else if (type === 'tccc') {
+        appendChatMessage('user', 'Información sobre Medicina Táctica TCCC.');
+        setTimeout(() => {
+          const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent('Hola Happy Tactical, deseo inscribirme en la Capacitación de Medicina Táctica TCCC / Primeros Auxilios.')}`;
+          appendChatMessage('bot', 'Certificación en control de hemorragias masivas (torniquete CAT), empaquetamiento de heridas y atención bajo fuego bajo estándar militar TCCC.', waUrl, '🩺 INSCRIBIRME EN TCCC');
+        }, 400);
+      } else if (type === 'brigadas') {
+        appendChatMessage('user', 'Capacitación de Brigadas Corporativas (Ley 29783).');
+        setTimeout(() => {
+          const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent('Hola Happy Tactical, solicito cotización para capacitar a la Brigada de Emergencia de mi empresa (Ley 29783).')}`;
+          appendChatMessage('bot', 'Diseñamos planes a medida para empresas: Primeros Auxilios, Lucha Contra Incendios y Evacuación con emisión de certificados oficiales auditables.', waUrl, '🏢 COTIZAR PARA EMPRESA');
+        }, 400);
+      } else if (type === 'cotizar') {
+        appendChatMessage('user', 'Deseo cotizar una capacitación.');
+        setTimeout(() => {
+          const cotizadorSec = document.getElementById('cotizador');
+          if (cotizadorSec) {
+            cotizadorSec.scrollIntoView({ behavior: 'smooth' });
+            toggleTacticalChat();
+          }
+        }, 300);
+      } else if (type === 'whatsapp') {
+        appendChatMessage('user', 'Quiero hablar con un instructor directamente.');
+        const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent('Hola Happy Tactical, deseo comunicarme directamente con un instructor.')}`;
+        setTimeout(() => {
+          appendChatMessage('bot', 'Te transfiero de inmediato a nuestra línea de atención prioritaria vía WhatsApp.', waUrl, '📲 ABRIR WHATSAPP AHORA');
+        }, 300);
+      }
+    }
+
+    function handleTacticalChatSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('tacticalChatInput');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendChatMessage('user', text);
+      input.value = '';
+
+      const query = text.toLowerCase();
+      const cleanWa = (HT_CONFIG.whatsApp || '51977331267').replace(/\D/g, '');
+      const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent('Hola Happy Tactical, tengo la siguiente consulta: "' + text + '"')}`;
+
+      setTimeout(() => {
+        if (query.includes('sucamec') || query.includes('licencia') || query.includes('l10') || query.includes('permiso') || query.includes('requisito')) {
+          appendChatMessage('bot', 'Para la licencia SUCAMEC L10 te capacitamos en tiro real en polígono, balística y legislación para garantizar tu aprobación.', waUrl, '📲 CONSULTAR REQUISITOS');
+        } else if (query.includes('precio') || query.includes('costo') || query.includes('cuanto') || query.includes('cotiz') || query.includes('vale')) {
+          appendChatMessage('bot', 'Contamos con tarifas para individuales y paquetes corporativos. Puedes calcular tu inversión en nuestro cotizador o consultar al instructor:', waUrl, '💰 CONSULTAR COSTOS');
+        } else if (query.includes('fecha') || query.includes('cuando') || query.includes('horario') || query.includes('inicio') || query.includes('cronograma')) {
+          appendChatMessage('bot', 'Nuestros cursos abren grupos mensualmente en Lima. Revisa la sección de calendario o escríbenos para reservar tu cupo:', waUrl, '📅 VER CRONOGRAMA');
+        } else if (query.includes('donde') || query.includes('ubicacion') || query.includes('sede') || query.includes('lugar') || query.includes('direccion')) {
+          appendChatMessage('bot', 'Las clases teóricas y prácticas se imparten en nuestra sede central y polígono oficial en Lima, Perú.', waUrl, '📍 UBICACIÓN & CONTACTO');
+        } else if (query.includes('tccc') || query.includes('medicina') || query.includes('auxilio') || query.includes('sangre') || query.includes('herida')) {
+          appendChatMessage('bot', 'La capacitación TCCC incluye práctica con torniquetes reales, apósitos hemostáticos y simulación bajo estrés.', waUrl, '🩺 INFO CURSO TCCC');
+        } else {
+          appendChatMessage('bot', 'Entendido. Un instructor táctico oficial puede responderte en detalle a través de WhatsApp:', waUrl, '📲 HABLAR CON INSTRUCTOR');
+        }
+      }, 450);
+    }
+
+  </script>
 
 
   <!-- SISTEMA ÚNICO DE CURSOR TÁCTICO HUD DE ALTA PRECISIÓN -->
@@ -5751,6 +6232,60 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
         <button type="button" class="btn btn-secondary btn-sm" onclick="closeVideoEditorModal()">Cancelar</button>
         <button type="button" class="btn btn-primary btn-sm" onclick="saveVideoItemFromModal()">Guardar Video 💾</button>
       </div>
+    </div>
+  </div>
+
+
+  <!-- WIDGET ASISTENTE VIRTUAL TÁCTICO HUD (ALPHA-1) -->
+  <div id="tacticalChatWidget" class="tactical-chat-wrap">
+    <!-- Launcher Button -->
+    <button id="tacticalChatLauncher" class="tactical-chat-launcher" onclick="toggleTacticalChat()" aria-label="Abrir Asistente Táctico Virtual" title="Asistente Táctico ALPHA-1">
+      <span class="chat-radar-pulse"></span>
+      <span class="chat-launcher-badge">ALPHA-1 // ONLINE</span>
+      <div class="chat-launcher-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10a9.96 9.96 0 0 1-4.708-1.175L2 22l1.175-5.292A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2z"/><circle cx="12" cy="12" r="3" fill="#00e5ff"/></svg>
+      </div>
+    </button>
+
+    <!-- Chat Window Box -->
+    <div id="tacticalChatWindow" class="tactical-chat-window" role="dialog" aria-label="Ventana de Asistente Táctico" style="display: none;">
+      <!-- Header -->
+      <div class="tactical-chat-header">
+        <div class="tactical-chat-header-info">
+          <span class="chat-live-indicator"></span>
+          <div>
+            <div class="chat-agent-title">ASISTENTE TÁCTICO // ALPHA-1</div>
+            <div class="chat-agent-status">EN VIVO // RESPUESTA INMEDIATA</div>
+          </div>
+        </div>
+        <button type="button" class="chat-close-trigger" onclick="toggleTacticalChat()" aria-label="Cerrar Asistente">&times;</button>
+      </div>
+
+      <!-- Messages Container -->
+      <div id="tacticalChatMessages" class="tactical-chat-body">
+        <div class="chat-msg bot-msg">
+          <div class="msg-telemetry">[ALPHA-1 // OFICIAL DE GUARDIA]</div>
+          <div class="msg-bubble">
+            ¡Saludos, Operador! 👋 Bienvenido a <strong>Happy Tactical</strong>. Soy tu asistente táctico oficial. ¿En qué especialización o trámite podemos asesorarte hoy?
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Chips -->
+      <div class="tactical-chat-chips">
+        <button type="button" class="chat-chip" onclick="handleTacticalChip('sucamec')">🎯 Licencia SUCAMEC L10</button>
+        <button type="button" class="chat-chip" onclick="handleTacticalChip('tiro')">🔫 Tiro Defensivo</button>
+        <button type="button" class="chat-chip" onclick="handleTacticalChip('tccc')">🩺 Medicina TCCC</button>
+        <button type="button" class="chat-chip" onclick="handleTacticalChip('brigadas')">🏢 Brigadas Ley 29783</button>
+        <button type="button" class="chat-chip" onclick="handleTacticalChip('cotizar')">💰 Cotizar Capacitación</button>
+        <button type="button" class="chat-chip chat-chip-whatsapp" onclick="handleTacticalChip('whatsapp')">📲 WhatsApp con Instructor</button>
+      </div>
+
+      <!-- Free Input Form -->
+      <form id="tacticalChatForm" class="tactical-chat-input-row" onsubmit="handleTacticalChatSubmit(event)">
+        <input type="text" id="tacticalChatInput" placeholder="Escribe tu consulta operativa..." autocomplete="off">
+        <button type="submit" id="tacticalChatSendBtn" aria-label="Enviar Mensaje">ENVIAR ➔</button>
+      </form>
     </div>
   </div>
 
