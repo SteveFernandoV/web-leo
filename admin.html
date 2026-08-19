@@ -1382,6 +1382,16 @@
 
     // 2. POBLAR FORMULARIO
     function populateForm() {
+
+      if (APP_CONFIG.images) {
+        if (APP_CONFIG.images.logo) { setVal('input_img_logo', APP_CONFIG.images.logo); updateImagePreview('preview_logo', APP_CONFIG.images.logo); }
+        if (APP_CONFIG.images.hero) { setVal('input_img_hero', APP_CONFIG.images.hero); updateImagePreview('preview_hero', APP_CONFIG.images.hero); }
+        if (APP_CONFIG.images.about) { setVal('input_img_about', APP_CONFIG.images.about); updateImagePreview('preview_about', APP_CONFIG.images.about); }
+        if (APP_CONFIG.images.c1) { setVal('input_img_c1', APP_CONFIG.images.c1); updateImagePreview('preview_c1', APP_CONFIG.images.c1); }
+        if (APP_CONFIG.images.c2) { setVal('input_img_c2', APP_CONFIG.images.c2); updateImagePreview('preview_c2', APP_CONFIG.images.c2); }
+        if (APP_CONFIG.images.c3) { setVal('input_img_c3', APP_CONFIG.images.c3); updateImagePreview('preview_c3', APP_CONFIG.images.c3); }
+      }
+
       const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el && val !== undefined) el.value = val;
@@ -1742,6 +1752,122 @@
       loadConfig();
       checkAuth();
     });
-  </script>
+  
+
+    // ========================================================================
+    // GESTOR DE SUBIDA DE IMÁGENES DESDE GALERÍA / DISPOSITIVO (FILEREADER)
+    // ========================================================================
+    function handleImageFileUpload(event, previewImgId, targetInputId) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        const previewEl = document.getElementById(previewImgId);
+        const inputEl = document.getElementById(targetInputId);
+        
+        if (previewEl) previewEl.src = base64Data;
+        if (inputEl) inputEl.value = base64Data;
+        
+        showToast('Foto cargada desde tu dispositivo.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateImagePreview(previewImgId, url) {
+      const previewEl = document.getElementById(previewImgId);
+      if (previewEl && url) {
+        previewEl.src = url;
+      }
+    }
+
+    function saveAllImagesConfig() {
+      const config = JSON.parse(localStorage.getItem('HT_CONFIG_PROD_V3') || '{}');
+      config.images = config.images || {};
+      
+      config.images.logo = document.getElementById('input_img_logo') ? document.getElementById('input_img_logo').value : 'assets/images/img_930ab638.png';
+      config.images.hero = document.getElementById('input_img_hero') ? document.getElementById('input_img_hero').value : 'assets/images/img_7062ad4f.png';
+      config.images.about = document.getElementById('input_img_about') ? document.getElementById('input_img_about').value : 'assets/images/img_3781d6ff.png';
+      config.images.c1 = document.getElementById('input_img_c1') ? document.getElementById('input_img_c1').value : 'assets/images/img_e7a7146c.jpg';
+      config.images.c2 = document.getElementById('input_img_c2') ? document.getElementById('input_img_c2').value : 'assets/images/img_2d71eb4f.jpg';
+      config.images.c3 = document.getElementById('input_img_c3') ? document.getElementById('input_img_c3').value : 'assets/images/img_5391baca.jpg';
+
+      localStorage.setItem('HT_CONFIG_PROD_V3', JSON.stringify(config));
+      localStorage.setItem('HT_CUSTOM_CONFIG_V2', JSON.stringify(config));
+      localStorage.setItem('HT_OWNER_CONFIG_V2', JSON.stringify(config));
+      window.dispatchEvent(new CustomEvent('ht_config_updated'));
+      showToast('✓ Todas las fotos del sistema guardadas y sincronizadas.');
+    }
+
+    // Modal para agregar foto a la galería desde dispositivo o URL
+    function promptAddGalleryPhoto() {
+      const modalHtml = `
+        <div id="addPhotoModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+          <div style="background: #0d1424; border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 24px; max-width: 480px; width: 100%; box-shadow: 0 0 30px rgba(0,229,255,0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="color: #fff; font-size: 16px; font-weight: 800; font-family: var(--font-display);">📸 AÑADIR FOTO A LA GALERÍA</h3>
+              <button onclick="document.getElementById('addPhotoModal').remove()" style="background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 12px; text-align: center; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px;">
+              <img id="newGalleryPreview" src="https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80" style="max-height: 120px; max-width: 100%; border-radius: 6px; object-fit: cover;">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+              <label class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;">
+                <span>📁</span> Seleccionar foto de mi galería / dispositivo
+                <input type="file" accept="image/*" style="display: none;" onchange="handleImageFileUpload(event, 'newGalleryPreview', 'newGalleryUrl')">
+              </label>
+
+              <input type="text" id="newGalleryUrl" class="form-control" placeholder="O ingresa URL de la imagen" value="https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80" oninput="updateImagePreview('newGalleryPreview', this.value)" style="font-size: 12px;">
+              <input type="text" id="newGalleryTitle" class="form-control" placeholder="Título de la fotografía (ej: Polígono de Tiro)" value="Entrenamiento Operativo" style="font-size: 12px;">
+              <input type="text" id="newGalleryBadge" class="form-control" placeholder="Insignia / Categoría (ej: TÁCTICO, NOCTURNO)" value="TÁCTICO" style="font-size: 12px;">
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('addPhotoModal').remove()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" onclick="confirmAddGalleryPhoto()">Confirmar y Guardar</button>
+            </div>
+          </div>
+        </div>
+      `;
+      const div = document.createElement('div');
+      div.innerHTML = modalHtml;
+      document.body.appendChild(div.firstElementChild);
+    }
+
+    function confirmAddGalleryPhoto() {
+      const url = document.getElementById('newGalleryUrl').value.trim();
+      const title = document.getElementById('newGalleryTitle').value.trim() || 'Foto Operativa';
+      const badge = document.getElementById('newGalleryBadge').value.trim() || 'TÁCTICO';
+
+      if (!url) {
+        alert('Por favor sube una imagen o ingresa una URL válida.');
+        return;
+      }
+
+      if (!APP_CONFIG.gallery) APP_CONFIG.gallery = [];
+      APP_CONFIG.gallery.push({
+        id: 'gal-' + Date.now(),
+        title: title,
+        badge: badge,
+        url: url,
+        location: 'Happy Tactical - Sede Lima'
+      });
+
+      saveConfiguration();
+      renderGalleryAdminCards();
+      const modal = document.getElementById('addPhotoModal');
+      if (modal) modal.remove();
+      showToast('✓ Nueva foto agregada a la galería.');
+    }
+    
+</script>
 </body>
 </html>
