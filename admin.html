@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>Panel de Control del Dueño // Happy Tactical Command Center</title>
+  <meta name="description" content="Centro de Mando y Editor Operativo del Propietario para Happy Tactical. Gestión de contenidos, cursos, calendario, multimedia y sistema.">
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Google Fonts: Orbitron & Rajdhani & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-void: #03060c;
+      --bg-panel: #080d16;
+      --bg-card: rgba(13, 20, 32, 0.85);
+      --bg-card-hover: rgba(18, 28, 45, 0.95);
+      --bg-input: rgba(6, 10, 16, 0.9);
+      --border-card: rgba(0, 229, 255, 0.18);
+      --border-cyan: rgba(0, 229, 255, 0.4);
+      --neon-cyan: #00e5ff;
+      --neon-pink: #ff007f;
+      --neon-amber: #ffb300;
+      --neon-green: #00e676;
+      --text-main: #f0f4fc;
+      --text-dim: #8b9bb4;
+      --font-display: 'Orbitron', 'Rajdhani', sans-serif;
+      --font-tactical: 'Rajdhani', sans-serif;
+      --font-sans: 'Inter', system-ui, sans-serif;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background grid */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ========================================================================
+       AUTH PIN LOCK SCREEN
+       ======================================================================== */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 40%, rgba(13, 22, 36, 0.95) 0%, rgba(3, 6, 12, 0.99) 100%);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+    .auth-overlay.unlocked {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .auth-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-cyan);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 229, 255, 0.15);
+      text-align: center;
+      position: relative;
+    }
+    .auth-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      letter-spacing: 1.5px;
+      padding: 4px 12px;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    .auth-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .auth-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    .pin-input-wrap {
+      margin-bottom: 20px;
+    }
+    .pin-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1.5px solid rgba(0, 229, 255, 0.35);
+      border-radius: var(--radius-md);
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: 12px;
+      padding: 14px;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+    .pin-input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+    }
+    .auth-error {
+      color: var(--neon-pink);
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* ========================================================================
+       MAIN APP SHELL (TOP HUD & SIDEBAR + CONTENT)
+       ======================================================================== */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Top HUD Header */
+    .top-header {
+      background: rgba(6, 10, 16, 0.95);
+      border-bottom: 1px solid var(--border-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo-txt {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 1.5px;
+    }
+    .brand-logo-txt span {
+      color: var(--neon-cyan);
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-display);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--neon-green);
+      background: rgba(0, 230, 118, 0.08);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      padding: 3px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.8px;
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--neon-green);
+      box-shadow: 0 0 8px var(--neon-green);
+      animation: pulseAnim 1.8s infinite;
+    }
+    @keyframes pulseAnim {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.6; }
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--neon-cyan), #00a8ff);
+      color: #03060c;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(0, 229, 255, 0.6);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: #fff;
+      color: #fff;
+    }
+    .btn-danger {
+      background: rgba(255, 59, 48, 0.15);
+      border: 1px solid rgba(255, 59, 48, 0.4);
+      color: #ff5252;
+    }
+    .btn-danger:hover {
+      background: rgba(255, 59, 48, 0.3);
+      color: #fff;
+    }
+    .btn-success {
+      background: rgba(0, 230, 118, 0.15);
+      border: 1px solid rgba(0, 230, 118, 0.4);
+      color: var(--neon-green);
+    }
+    .btn-success:hover {
+      background: rgba(0, 230, 118, 0.3);
+      color: #fff;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    /* Main Grid Layout */
+    .app-body {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      flex: 1;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      background: rgba(8, 13, 22, 0.95);
+      border-right: 1px solid var(--border-card);
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: sticky;
+      top: 60px;
+      height: calc(100vh - 60px);
+      overflow-y: auto;
+    }
+    .nav-category-title {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 10px 12px 4px 12px;
+    }
+    .sidebar-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      color: var(--text-dim);
+      font-family: var(--font-display);
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    .sidebar-btn:hover {
+      background: rgba(0, 229, 255, 0.06);
+      color: #fff;
+      border-color: rgba(0, 229, 255, 0.18);
+    }
+    .sidebar-btn.active {
+      background: rgba(0, 229, 255, 0.12);
+      border-color: var(--neon-cyan);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(0, 229, 255, 0.15), inset 0 0 10px rgba(0, 229, 255, 0.05);
+    }
+    .sidebar-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* Content Area */
+    .content-area {
+      padding: 30px;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Section Headers */
+    .module-header {
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .module-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .module-title span {
+      color: var(--neon-cyan);
+    }
+    .module-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* Card Panels & Forms */
+    .card-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .card-panel-title {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    .form-label {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .form-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      padding: 10px 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+    }
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* Live Stat Boxes */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+    .stat-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--neon-cyan);
+    }
+    .stat-val {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+    }
+    .stat-lbl {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* Dynamic Item Rows (Calendar / Videos / Photos) */
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .item-row {
+      background: rgba(8, 13, 20, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: all 0.25s ease;
+    }
+    .item-row:hover {
+      border-color: var(--border-cyan);
+      background: rgba(12, 19, 30, 0.95);
+    }
+    .item-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .item-title {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .item-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .badge-tag {
+      font-family: var(--font-display);
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      color: var(--neon-cyan);
+    }
+
+    /* Floating Save Bar */
+    .save-bar-fixed {
+      position: sticky;
+      bottom: 0;
+      background: rgba(6, 10, 16, 0.95);
+      border-top: 1px solid var(--border-cyan);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 90;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      right: 28px;
+      background: rgba(8, 14, 24, 0.96);
+      border: 1px solid var(--neon-green);
+      border-radius: var(--radius-md);
+      color: #fff;
+      padding: 14px 22px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px rgba(0, 230, 118, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10000;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 900px) {
+      .app-body {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-card);
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 10px;
+      }
+      .nav-category-title {
+        display: none;
+      }
+      .sidebar-btn {
+        flex: 0 0 auto;
+        width: auto;
+        padding: 8px 12px;
+      }
+      .content-area {
+        padding: 20px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================
+       1. PANTALLA DE SEGURIDAD / PIN DE ACCESO
+       ======================================================================== -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="auth-badge">
+        <span>🛡️</span> SEGURIDAD TÁCTICA NIVEL 1
+      </div>
+      <h1 class="auth-title">CENTRO DE MANDO</h1>
+      <p class="auth-desc">Introduce tu PIN de 4 dígitos para acceder al panel de administración del propietario.</p>
+
+      <form onsubmit="handleAuthSubmit(event)">
+        <div class="pin-input-wrap">
+          <input type="password" id="ownerPinInput" class="pin-input" maxlength="4" placeholder="••••" autofocus required>
+        </div>
+        <div class="auth-error" id="authErrorMsg">
+          ⚠ PIN INCORRECTO. INTENTA NUEVAMENTE.
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <a href="index.html" class="btn btn-secondary" style="flex: 1;">VOLVER AL SITIO 🌐</a>
+          <button type="submit" class="btn btn-primary" style="flex: 1;">INGRESAR 🔓</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       2. APLICACIÓN PRINCIPAL (PANEL DEL DUEÑO SPA)
+       ======================================================================== -->
+  <div class="app-shell" id="appShell">
+    
+    <!-- Top Header HUD -->
+    <header class="top-header">
+      <div class="brand-group">
+        <div class="brand-logo-txt">HAPPY <span>TACTICAL</span> // ADMIN</div>
+        <div class="status-pill">
+          <span class="pulse-dot"></span>
+          <span>SISTEMA EN LÍNEA</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" title="Ver sitio web en vivo">
+          <span>VER WEB</span> ↗
+        </a>
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveAllChanges()">
+          <span>GUARDAR CAMBIOS</span> 💾
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="lockAdmin()" title="Cerrar sesión">
+          <span>BLOQUEAR</span> 🔒
+        </button>
+      </div>
+    </header>
+
+    <!-- App Body Grid -->
+    <div class="app-body">
+      
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar" aria-label="Navegación del panel">
+        <div class="nav-category-title">PANEL PRINCIPAL</div>
+        <button type="button" class="sidebar-btn active" onclick="switchTab('tab-overview', this)">
+          <span class="sidebar-icon">📊</span> Resumen Operativo
+        </button>
+
+        <div class="nav-category-title">CONTACTO & MARCA</div>
+        <button type="button" class="sidebar-btn" onclick="switchTab('tab-contact', this)">
+          <span class="sidebar-icon">📞</span> WhatsApp &amp; Enlaces
+        </button>
+        <button type="button" class="sidebar-btn" onclick="switchTab('tab-hero', this)">
+          <span class="sidebar-icon">📝</span> Hero &amp; Textos
+        </button>
+
+        <div class="nav-category-title">PROGRAMAS & EVENTOS</div>
+        <button type="button" class="sidebar-btn" onclick="switchTab('tab-courses', this)">
+          <span class="sidebar-icon">📚</span> Los 3 Cursos
+        </button>
+        <button type="button" class="sidebar-btn" onclick="switchTab('tab-schedule', this)">
+          <span class="sidebar-icon">📅</span> Calendario 2026
+        </button>
+
+        <div class="nav-category-title">MULTIMEDIA & EVIDENCIA</div>
+        <button type="button" class="sidebar-btn" onclick="switchTab('tab-gallery', this)">
+          <span class="sidebar-icon">📸</span> Galería de Fotos
+        </button>
+        <button type="button" class="sidebar-btn" onclick="switchTab('tab-videos', this)">
+          <span class="sidebar-icon">🎬</span> Videoteca Táctica
+        </button>
+
+        <div class="nav-category-title">SISTEMA</div>
+        <button type="button" class="sidebar-btn" onclick="switchTab('tab-system', this)">
+          <span class="sidebar-icon">⚙️</span> Respaldos &amp; Exportar
+        </button>
+      </aside>
+
+      <!-- Main Content Tabs -->
+      <main class="content-area">
+
+        <!-- ==================================================================
+             TAB 1: RESUMEN OPERATIVO (OVERVIEW)
+             ================================================================== -->
+        <section class="tab-content active" id="tab-overview">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">RESUMEN <span>OPERATIVO</span></h2>
+              <p class="module-desc">Estado general de tu sitio web, métricas de contenido y accesos directos.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="saveAllChanges()">Sincronizar Todo 💾</button>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-icon-wrap">📚</div>
+              <div>
+                <div class="stat-val">3</div>
+                <div class="stat-lbl">Cursos Activos</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrap">📅</div>
+              <div>
+                <div class="stat-val" id="statScheduleCount">4</div>
+                <div class="stat-lbl">Fechas en Calendario</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrap">📸</div>
+              <div>
+                <div class="stat-val" id="statGalleryCount">8</div>
+                <div class="stat-lbl">Fotos en Galería</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrap">🎬</div>
+              <div>
+                <div class="stat-val" id="statVideoCount">5</div>
+                <div class="stat-lbl">Videos Tácticos</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>⚡</span> Accesos Rápidos de Configuración</h3>
+            <p class="form-hint" style="margin-bottom: 16px;">Edita rápidamente los datos más importantes que ven tus clientes en la web:</p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" onclick="switchTab('tab-contact', document.querySelectorAll('.sidebar-btn')[1])">Actualizar WhatsApp 📲</button>
+              <button type="button" class="btn btn-secondary" onclick="switchTab('tab-schedule', document.querySelectorAll('.sidebar-btn')[4])">Agregar Fechas de Curso 📅</button>
+              <button type="button" class="btn btn-secondary" onclick="switchTab('tab-videos', document.querySelectorAll('.sidebar-btn')[6])">Gestionar Videos de YouTube 🎬</button>
+              <button type="button" class="btn btn-secondary" onclick="switchTab('tab-system', document.querySelectorAll('.sidebar-btn')[7])">Exportar Archivo HTML 💾</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 2: WHATSAPP, CONTACTO & BANNERS
+             ================================================================== -->
+        <section class="tab-content" id="tab-contact">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">WHATSAPP &amp; <span>CANALES DE CONTACTO</span></h2>
+              <p class="module-desc">Configura los números de atención, enlaces de mensajería y cintillos superiores.</p>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>📲</span> Canales de Atención Inmediata</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="cfgWhatsApp">Número de WhatsApp (Sin espacios ni símbolos)</label>
+                <input type="text" id="cfgWhatsApp" class="form-input" placeholder="51977331267">
+                <span class="form-hint">Ej: 51977331267 (Código país 51 + 9 dígitos)</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgWhatsAppDisplay">WhatsApp Formato Visible</label>
+                <input type="text" id="cfgWhatsAppDisplay" class="form-input" placeholder="+51 977 331 267">
+                <span class="form-hint">Ej: +51 977 331 267</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgPhone">Central Telefónica / Teléfono</label>
+                <input type="text" id="cfgPhone" class="form-input" placeholder="+51 977 331 267">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgEmail">Correo Electrónico de Contacto</label>
+                <input type="email" id="cfgEmail" class="form-input" placeholder="leonardochacon181999@hotmail.com">
+              </div>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>📡</span> Cintillo Superior HUD (Marquesina)</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="cfgHudBanner">Texto de Estado / Convocatoria</label>
+                <input type="text" id="cfgHudBanner" class="form-input" placeholder="SISTEMA OPERATIVO | CONVOCATORIA 2026">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgHudSubtitle">Subtítulo Descriptivo Superior</label>
+                <input type="text" id="cfgHudSubtitle" class="form-input" placeholder="SEDE LIMA • CERTIFICACIÓN OFICIAL • ASISTENCIA 24/7">
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 3: HERO & TEXTOS DE MARCA
+             ================================================================== -->
+        <section class="tab-content" id="tab-hero">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">HERO &amp; <span>TEXTOS DE MARCA</span></h2>
+              <p class="module-desc">Personaliza los títulos principales, lemas de combate y doctrina institucional.</p>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>🎯</span> Sección Principal (Hero Section)</h3>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label class="form-label" for="cfgHeroBadge">Insignia Superior del Hero</label>
+                <input type="text" id="cfgHeroBadge" class="form-input" placeholder="[ FORMACIÓN OPERATIVA & SEGURIDAD DE ÉLITE ]">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgHeroSub1">Palabra Clave 1 (Cyan)</label>
+                <input type="text" id="cfgHeroSub1" class="form-input" placeholder="FORMACIÓN">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgHeroSub2">Palabra Clave 2 (Blanco)</label>
+                <input type="text" id="cfgHeroSub2" class="form-input" placeholder="DISCIPLINA">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgHeroSub3">Palabra Clave 3 (Magenta / Glow)</label>
+                <input type="text" id="cfgHeroSub3" class="form-input" placeholder="SEGURIDAD TOTAL">
+              </div>
+              <div class="form-group full-width">
+                <label class="form-label" for="cfgHeroDesc">Descripción Principal del Hero</label>
+                <textarea id="cfgHeroDesc" class="form-textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>🛡️</span> Misión y Doctrina (Sección Nosotros)</h3>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label class="form-label" for="cfgAboutTitle">Título de Misión Estratégica</label>
+                <input type="text" id="cfgAboutTitle" class="form-input" placeholder="PREPARACIÓN ESTRATÉGICA ANTE CUALQUIER ESCENARIO">
+              </div>
+              <div class="form-group full-width">
+                <label class="form-label" for="cfgAboutDesc">Texto Completo de Doctrina y Enfoque Operativo</label>
+                <textarea id="cfgAboutDesc" class="form-textarea" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 4: GESTOR DE LOS 3 CURSOS
+             ================================================================== -->
+        <section class="tab-content" id="tab-courses">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">PROGRAMAS &amp; <span>LOS 3 CURSOS</span></h2>
+              <p class="module-desc">Edita la información, horas académicas y contenido de los cursos tácticos oficiales.</p>
+            </div>
+          </div>
+
+          <!-- Curso 1 -->
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>01</span> Curso de Seguridad y Prevención</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="cfgC1Title">Título del Curso</label>
+                <input type="text" id="cfgC1Title" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgC1Hours">Duración / Horas</label>
+                <input type="text" id="cfgC1Hours" class="form-input" placeholder="40 Horas">
+              </div>
+              <div class="form-group full-width">
+                <label class="form-label" for="cfgC1Desc">Descripción del Programa</label>
+                <textarea id="cfgC1Desc" class="form-textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Curso 2 -->
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>02</span> Curso de Gestión de Emergencias</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="cfgC2Title">Título del Curso</label>
+                <input type="text" id="cfgC2Title" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgC2Hours">Duración / Horas</label>
+                <input type="text" id="cfgC2Hours" class="form-input" placeholder="32 Horas">
+              </div>
+              <div class="form-group full-width">
+                <label class="form-label" for="cfgC2Desc">Descripción del Programa</label>
+                <textarea id="cfgC2Desc" class="form-textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Curso 3 -->
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>03</span> Curso de Primeros Auxilios Tácticos (TCCC)</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="cfgC3Title">Título del Curso</label>
+                <input type="text" id="cfgC3Title" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cfgC3Hours">Duración / Horas</label>
+                <input type="text" id="cfgC3Hours" class="form-input" placeholder="24 Horas">
+              </div>
+              <div class="form-group full-width">
+                <label class="form-label" for="cfgC3Desc">Descripción del Programa</label>
+                <textarea id="cfgC3Desc" class="form-textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 5: GESTOR DE CALENDARIO 2026
+             ================================================================== -->
+        <section class="tab-content" id="tab-schedule">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">CALENDARIO &amp; <span>FECHAS DE CONVOCATORIA</span></h2>
+              <p class="module-desc">Programa nuevas fechas de capacitación, gestiona vacantes y sincronizaciones con iCal/Google.</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addNewScheduleItem()">+ Nueva Fecha</button>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>📅</span> Fechas Registradas en el Calendario</h3>
+            <div class="item-list" id="scheduleItemsContainer">
+              <!-- Rendered dynamically by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 6: GALERÍA DE FOTOS (PHOTO STREAM)
+             ================================================================== -->
+        <section class="tab-content" id="tab-gallery">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">GALERÍA CONTINUA <span>EN ACCIÓN</span></h2>
+              <p class="module-desc">Administra el flujo de fotografías operativas que se muestran en el carrusel táctico.</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addNewGalleryItem()">+ Añadir Foto</button>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>📸</span> Catálogo de Imágenes del Stream</h3>
+            <div class="item-list" id="galleryItemsContainer">
+              <!-- Rendered dynamically by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 7: VIDEOTECA OPERATIVA TÁCTICA
+             ================================================================== -->
+        <section class="tab-content" id="tab-videos">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">VIDEOTECA <span>OPERATIVA TÁCTICA</span></h2>
+              <p class="module-desc">Añade o modifica los videos de YouTube/Vimeo, define el video destacado Spotlight y categorías.</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addNewVideoItem()">+ Añadir Video</button>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>🎬</span> Catálogo de Videos Tácticos</h3>
+            <div class="item-list" id="videoItemsContainer">
+              <!-- Rendered dynamically by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 8: SISTEMA & EXPORTACIÓN
+             ================================================================== -->
+        <section class="tab-content" id="tab-system">
+          <div class="module-header">
+            <div>
+              <h2 class="module-title">SISTEMA, <span>PIN &amp; RESPALDOS</span></h2>
+              <p class="module-desc">Cambia la clave de acceso, restaura configuraciones o descarga el archivo HTML completo.</p>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>🔐</span> Modificar PIN del Propietario</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="cfgNewPin">Nuevo PIN de 4 dígitos</label>
+                <input type="password" id="cfgNewPin" class="form-input" maxlength="4" placeholder="7788">
+                <span class="form-hint">El PIN predeterminado es 7788.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <h3 class="card-panel-title"><span>💾</span> Exportar / Restaurar Configuración</h3>
+            <p class="form-hint" style="margin-bottom: 16px;">
+              Puedes generar y descargar el archivo <code>index.html</code> actualizado con todos tus cambios inyectados para respaldarlo o subirlo a tu hosting.
+            </p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-primary" onclick="exportUpdatedHTML()">Descargar index.html Actualizado 📥</button>
+              <button type="button" class="btn btn-danger" onclick="restoreFactoryDefaults()">Restaurar Valores de Fábrica 🔄</button>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- Floating Sticky Save Bar -->
+    <footer class="save-bar-fixed">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="pulse-dot"></span>
+        <span style="font-family: var(--font-display); font-size: 11px; color: var(--text-dim); letter-spacing: 0.8px;">
+          CAMBIOS GUARDADOS LOCALMENTE EN TU NAVEGADOR
+        </span>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <a href="index.html" class="btn btn-secondary btn-sm">CANCELAR</a>
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveAllChanges()">
+          GUARDAR TODOS LOS CAMBIOS 💾
+        </button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="adminToast">
+    <span>✅</span> <span id="toastMsg">Cambios guardados con éxito</span>
+  </div>
+
+  <!-- JavaScript Engine -->
+  <script>
+    const STORAGE_KEY = 'HT_CUSTOM_CONFIG_V2';
+
+    const DEFAULT_CONFIG = {
+      pin: '7788',
+      whatsApp: '51977331267',
+      whatsAppDisplay: '+51 977 331 267',
+      email: 'leonardochacon181999@hotmail.com',
+      phone: '+51 977 331 267',
+      hudBanner: 'SISTEMA OPERATIVO | CONVOCATORIA 2026',
+      hudSubtitle: 'SEDE LIMA • CERTIFICACIÓN OFICIAL • ASISTENCIA 24/7',
+      heroBadge: '[ FORMACIÓN OPERATIVA & SEGURIDAD DE ÉLITE ]',
+      heroSub1: 'FORMACIÓN',
+      heroSub2: 'DISCIPLINA',
+      heroSub3: 'SEGURIDAD TOTAL',
+      heroDesc: 'Instrucción táctica profesional en seguridad preventiva, comando de emergencias, primeros auxilios en combate (TCCC) y respuesta estratégica ante crisis con certificación de alto nivel.',
+      aboutMissionTitle: 'PREPARACIÓN ESTRATÉGICA ANTE CUALQUIER ESCENARIO',
+      aboutMissionDesc: 'Nuestro enfoque combina metodología teórica rigurosa con simulacros de alta fidelidad bajo estrés controlado. Formamos el criterio preventivo y la respuesta técnica necesaria para salvaguardar vidas y proteger activos críticos.',
+      c1Title: 'Seguridad y Prevención',
+      c1Hours: '40 Horas',
+      c1Desc: 'Formación integral en identificación de amenazas, control de accesos táctico, resguardo patrimonial y diseño de protocolos de seguridad física.',
+      c2Title: 'Gestión de Emergencias',
+      c2Hours: '32 Horas',
+      c2Desc: 'Planificación estratégica, sistema de comando de incidentes (SCI), evacuación masiva, control de incendios y mitigación de desastres.',
+      c3Title: 'Primeros Auxilios Tácticos',
+      c3Hours: '24 Horas',
+      c3Desc: 'Atención prehospitalaria en combate: control de hemorragias exanguinantes con torniquete, manejo de vía aérea, neumotórax y extracción de heridos.',
+      schedule: [
+        {
+          id: 1,
+          isoDate: '2026-03-14',
+          date: '14 MAR',
+          group: 'GRUPO 01 - 2026',
+          title: 'Seguridad y Prevención Integral',
+          details: 'Modalidad Presencial Lima • Sábados 09:00 - 14:00 • Incluye manual y acreditación',
+          category: 'seguridad',
+          status: 'open',
+          statusText: 'CONVOCATORIA ABIERTA',
+          startTime: '09:00',
+          endTime: '14:00'
+        },
+        {
+          id: 2,
+          isoDate: '2026-03-21',
+          date: '21 MAR',
+          group: 'GRUPO 01 - 2026',
+          title: 'Gestión de Emergencias & SCI',
+          details: 'Prácticas de campo en rescate y comando • Certificado oficial',
+          category: 'emergencias',
+          status: 'open',
+          statusText: 'CONVOCATORIA ABIERTA',
+          startTime: '09:00',
+          endTime: '15:00'
+        },
+        {
+          id: 3,
+          isoDate: '2026-03-28',
+          date: '28 MAR',
+          group: 'GRUPO 02 - 2026',
+          title: 'Primeros Auxilios Tácticos (TCCC)',
+          details: 'Entrenamiento intensivo en control de hemorragias y trauma bajo fuego simulado',
+          category: 'primeros-auxilios',
+          status: 'few',
+          statusText: 'ÚLTIMOS CUPOS',
+          startTime: '08:30',
+          endTime: '16:30'
+        },
+        {
+          id: 4,
+          isoDate: '2026-04-11',
+          date: '11 ABR',
+          group: 'EMPRESAS',
+          title: 'Entrenamiento de Brigadas Corporativas',
+          details: 'Capacitación a medida para brigadistas de seguridad y respuesta institucional',
+          category: 'corporativo',
+          status: 'open',
+          statusText: 'AGENDA DISPONIBLE',
+          startTime: '09:00',
+          endTime: '13:00'
+        }
+      ],
+      galleryImages: [
+        {
+          id: 'gal-1',
+          title: 'Procedimiento de Control de Hemorragias TCCC',
+          badge: 'TCCC MEDICINE',
+          location: 'Lima - Sede Operativa',
+          url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+          desc: 'Aplicación correcta de torniquetes CAT Gen 7 y empaquetamiento de heridas bajo protocolo MARCH.'
+        },
+        {
+          id: 'gal-2',
+          title: 'Entrenamiento de Tiro Táctico Defensivo',
+          badge: 'POLÍGONO SUR',
+          location: 'Polígono de Tiro Especializado',
+          url: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80',
+          desc: 'Técnicas dinámicas de tiro, transiciones de arma primaria a secundaria y resolución de encasquillamientos.'
+        },
+        {
+          id: 'gal-3',
+          title: 'Extracción Rápida de Heridos en Zona Bajo Fuego',
+          badge: 'EVACUACIÓN CARE',
+          location: 'Base de Maniobras',
+          url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+          desc: 'Arrastre táctico, uso de camillas plegables Sked y aseguramiento del perímetro durante la atención.'
+        },
+        {
+          id: 'gal-4',
+          title: 'Formación de Brigadas Industriales y Rescate',
+          badge: 'BRIGADAS LEY 29783',
+          location: 'Instalaciones Corporativas',
+          url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80',
+          desc: 'Capacitación para brigadistas empresariales en control de amagos de incendio y evacuación de emergencia.'
+        }
+      ],
+      videos: [
+        {
+          id: 'vid-1',
+          title: 'Procedimientos de Medicina Táctica TCCC en Zona Hostil',
+          badge: 'TCCC EN COMBATE',
+          duration: '04:20',
+          category: 'primeros-auxilios',
+          thumbnail: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+          videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
+          desc: 'Demostración práctica de colocación de torniquete CAT bajo fuego simulado, hemostáticos y evacuación rápida en zona de amenaza directa.'
+        },
+        {
+          id: 'vid-2',
+          title: 'Entrenamiento de Tiro Táctico y Transición Rápida',
+          badge: 'TIRO DE PRECISIÓN',
+          duration: '03:45',
+          category: 'seguridad',
+          thumbnail: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80',
+          videoUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk',
+          desc: 'Técnicas avanzadas de desenfunde, recargas tácticas y tiro defensivo dinámico para escoltas y fuerzas de seguridad.'
+        },
+        {
+          id: 'vid-3',
+          title: 'Simulación de Rescate y Evacuación en Estructuras Colapsadas',
+          badge: 'RESCATE URBANO',
+          duration: '05:10',
+          category: 'emergencias',
+          thumbnail: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
+          videoUrl: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
+          desc: 'Ejercicios prácticos de búsqueda, extracción y estabilización de pacientes en situaciones críticas de catástrofe.'
+        },
+        {
+          id: 'vid-4',
+          title: 'Capacitación de Brigadas de Emergencia Corporativa (Ley 29783)',
+          badge: 'BRIGADAS EMPRESAS',
+          duration: '03:15',
+          category: 'corporativo',
+          thumbnail: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80',
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          desc: 'Formación integral de brigadas de lucha contra incendios, primeros auxilios y evacuación en plantas industriales y centros corporativos.'
+        }
+      ]
+    };
+
+    let APP_CONFIG = { ...DEFAULT_CONFIG };
+
+    // 1. CARGA DE CONFIGURACIÓN
+    function loadConfig() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          APP_CONFIG = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+        }
+      } catch (e) {
+        console.error('Error cargando configuración:', e);
+      }
+      populateForm();
+    }
+
+    // 2. POBLAR FORMULARIO
+    function populateForm() {
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined) el.value = val;
+      };
+
+      setVal('cfgWhatsApp', APP_CONFIG.whatsApp);
+      setVal('cfgWhatsAppDisplay', APP_CONFIG.whatsAppDisplay);
+      setVal('cfgPhone', APP_CONFIG.phone);
+      setVal('cfgEmail', APP_CONFIG.email);
+      setVal('cfgHudBanner', APP_CONFIG.hudBanner);
+      setVal('cfgHudSubtitle', APP_CONFIG.hudSubtitle);
+      setVal('cfgHeroBadge', APP_CONFIG.heroBadge);
+      setVal('cfgHeroSub1', APP_CONFIG.heroSub1);
+      setVal('cfgHeroSub2', APP_CONFIG.heroSub2);
+      setVal('cfgHeroSub3', APP_CONFIG.heroSub3);
+      setVal('cfgHeroDesc', APP_CONFIG.heroDesc);
+      setVal('cfgAboutTitle', APP_CONFIG.aboutMissionTitle);
+      setVal('cfgAboutDesc', APP_CONFIG.aboutMissionDesc);
+
+      setVal('cfgC1Title', APP_CONFIG.c1Title);
+      setVal('cfgC1Hours', APP_CONFIG.c1Hours);
+      setVal('cfgC1Desc', APP_CONFIG.c1Desc);
+
+      setVal('cfgC2Title', APP_CONFIG.c2Title);
+      setVal('cfgC2Hours', APP_CONFIG.c2Hours);
+      setVal('cfgC2Desc', APP_CONFIG.c2Desc);
+
+      setVal('cfgC3Title', APP_CONFIG.c3Title);
+      setVal('cfgC3Hours', APP_CONFIG.c3Hours);
+      setVal('cfgC3Desc', APP_CONFIG.c3Desc);
+
+      setVal('cfgNewPin', APP_CONFIG.pin || '7788');
+
+      renderScheduleList();
+      renderGalleryList();
+      renderVideoList();
+      updateOverviewStats();
+    }
+
+    function updateOverviewStats() {
+      const sCount = document.getElementById('statScheduleCount');
+      if (sCount) sCount.textContent = (APP_CONFIG.schedule || []).length;
+      const gCount = document.getElementById('statGalleryCount');
+      if (gCount) gCount.textContent = (APP_CONFIG.galleryImages || []).length;
+      const vCount = document.getElementById('statVideoCount');
+      if (vCount) vCount.textContent = (APP_CONFIG.videos || []).length;
+    }
+
+    // 3. RENDERIZAR LISTAS (CALENDARIO, GALERÍA, VIDEOS)
+    function renderScheduleList() {
+      const container = document.getElementById('scheduleItemsContainer');
+      if (!container) return;
+      const list = APP_CONFIG.schedule || [];
+
+      container.innerHTML = list.map((item, idx) => `
+        <div class="item-row">
+          <div class="item-meta">
+            <div class="item-title">${item.title}</div>
+            <div class="item-sub">
+              <span class="badge-tag">${item.date} (${item.isoDate})</span>
+              <span>• ${item.group} •</span>
+              <span style="color: var(--neon-cyan); font-weight:700;">${item.statusText}</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteScheduleItem(${idx})">Eliminar 🗑️</button>
+        </div>
+      `).join('');
+    }
+
+    function renderGalleryList() {
+      const container = document.getElementById('galleryItemsContainer');
+      if (!container) return;
+      const list = APP_CONFIG.galleryImages || [];
+
+      container.innerHTML = list.map((item, idx) => `
+        <div class="item-row">
+          <img src="${item.url}" alt="${item.title}" style="width: 60px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);">
+          <div class="item-meta">
+            <div class="item-title">${item.title}</div>
+            <div class="item-sub">
+              <span class="badge-tag">${item.badge}</span>
+              <span>📍 ${item.location}</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteGalleryItem(${idx})">Eliminar 🗑️</button>
+        </div>
+      `).join('');
+    }
+
+    function renderVideoList() {
+      const container = document.getElementById('videoItemsContainer');
+      if (!container) return;
+      const list = APP_CONFIG.videos || [];
+
+      container.innerHTML = list.map((item, idx) => `
+        <div class="item-row">
+          <div class="item-meta">
+            <div class="item-title">${item.title}</div>
+            <div class="item-sub">
+              <span class="badge-tag">${item.badge}</span>
+              <span>⏱️ ${item.duration}</span>
+              <span style="color: var(--text-dim); font-size:11px;">${item.videoUrl}</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteVideoItem(${idx})">Eliminar 🗑️</button>
+        </div>
+      `).join('');
+    }
+
+    // 4. ACCIONES DE GESTIÓN
+    function addNewScheduleItem() {
+      const title = prompt('Título del Curso / Capacitación:');
+      if (!title) return;
+      const isoDate = prompt('Fecha ISO (YYYY-MM-DD):', '2026-05-15');
+      if (!isoDate) return;
+      const dateTxt = prompt('Fecha visible (ej: 15 MAY):', '15 MAY');
+
+      APP_CONFIG.schedule.push({
+        id: Date.now(),
+        isoDate: isoDate,
+        date: dateTxt || '15 MAY',
+        group: 'GRUPO 2026',
+        title: title,
+        details: 'Modalidad Presencial • Incluye manual y certificación oficial',
+        category: 'seguridad',
+        status: 'open',
+        statusText: 'CONVOCATORIA ABIERTA',
+        startTime: '09:00',
+        endTime: '14:00'
+      });
+
+      renderScheduleList();
+      updateOverviewStats();
+      showToast('Nueva fecha agregada. Recuerda guardar cambios.');
+    }
+
+    function deleteScheduleItem(idx) {
+      if (confirm('¿Eliminar esta fecha del calendario?')) {
+        APP_CONFIG.schedule.splice(idx, 1);
+        renderScheduleList();
+        updateOverviewStats();
+        showToast('Fecha eliminada del calendario.');
+      }
+    }
+
+    function addNewGalleryItem() {
+      const title = prompt('Título de la Fotografía Táctica:');
+      if (!title) return;
+      const url = prompt('URL de la imagen (o enlace Unsplash/JPG):', 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80');
+      if (!url) return;
+
+      APP_CONFIG.galleryImages.push({
+        id: 'gal-' + Date.now(),
+        title: title,
+        badge: 'TÁCTICO',
+        location: 'Lima, Perú',
+        url: url,
+        desc: 'Registro oficial de actividades y entrenamiento de alta intensidad Happy Tactical.'
+      });
+
+      renderGalleryList();
+      updateOverviewStats();
+      showToast('Foto agregada a la galería.');
+    }
+
+    function deleteGalleryItem(idx) {
+      if (confirm('¿Eliminar esta foto de la galería?')) {
+        APP_CONFIG.galleryImages.splice(idx, 1);
+        renderGalleryList();
+        updateOverviewStats();
+        showToast('Foto eliminada.');
+      }
+    }
+
+    function addNewVideoItem() {
+      const title = prompt('Título del Video Táctico:');
+      if (!title) return;
+      const videoUrl = prompt('URL de YouTube o Vimeo:', 'https://www.youtube.com/watch?v=ScMzIvxBSi4');
+      if (!videoUrl) return;
+
+      APP_CONFIG.videos.push({
+        id: 'vid-' + Date.now(),
+        title: title,
+        badge: 'VIDEO TÁCTICO',
+        duration: '04:00',
+        category: 'seguridad',
+        thumbnail: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=800&q=80',
+        videoUrl: videoUrl,
+        desc: 'Demostración práctica de procedimientos operativos en campo.'
+      });
+
+      renderVideoList();
+      updateOverviewStats();
+      showToast('Video agregado a la videoteca.');
+    }
+
+    function deleteVideoItem(idx) {
+      if (confirm('¿Eliminar este video?')) {
+        APP_CONFIG.videos.splice(idx, 1);
+        renderVideoList();
+        updateOverviewStats();
+        showToast('Video eliminado.');
+      }
+    }
+
+    // 5. GUARDAR Y PERSISTIR
+    function saveAllChanges() {
+      const getVal = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : '';
+      };
+
+      APP_CONFIG.whatsApp = getVal('cfgWhatsApp') || APP_CONFIG.whatsApp;
+      APP_CONFIG.whatsAppDisplay = getVal('cfgWhatsAppDisplay') || APP_CONFIG.whatsAppDisplay;
+      APP_CONFIG.phone = getVal('cfgPhone') || APP_CONFIG.phone;
+      APP_CONFIG.email = getVal('cfgEmail') || APP_CONFIG.email;
+      APP_CONFIG.hudBanner = getVal('cfgHudBanner') || APP_CONFIG.hudBanner;
+      APP_CONFIG.hudSubtitle = getVal('cfgHudSubtitle') || APP_CONFIG.hudSubtitle;
+      APP_CONFIG.heroBadge = getVal('cfgHeroBadge') || APP_CONFIG.heroBadge;
+      APP_CONFIG.heroSub1 = getVal('cfgHeroSub1') || APP_CONFIG.heroSub1;
+      APP_CONFIG.heroSub2 = getVal('cfgHeroSub2') || APP_CONFIG.heroSub2;
+      APP_CONFIG.heroSub3 = getVal('cfgHeroSub3') || APP_CONFIG.heroSub3;
+      APP_CONFIG.heroDesc = getVal('cfgHeroDesc') || APP_CONFIG.heroDesc;
+      APP_CONFIG.aboutMissionTitle = getVal('cfgAboutTitle') || APP_CONFIG.aboutMissionTitle;
+      APP_CONFIG.aboutMissionDesc = getVal('cfgAboutDesc') || APP_CONFIG.aboutMissionDesc;
+
+      APP_CONFIG.c1Title = getVal('cfgC1Title') || APP_CONFIG.c1Title;
+      APP_CONFIG.c1Hours = getVal('cfgC1Hours') || APP_CONFIG.c1Hours;
+      APP_CONFIG.c1Desc = getVal('cfgC1Desc') || APP_CONFIG.c1Desc;
+
+      APP_CONFIG.c2Title = getVal('cfgC2Title') || APP_CONFIG.c2Title;
+      APP_CONFIG.c2Hours = getVal('cfgC2Hours') || APP_CONFIG.c2Hours;
+      APP_CONFIG.c2Desc = getVal('cfgC2Desc') || APP_CONFIG.c2Desc;
+
+      APP_CONFIG.c3Title = getVal('cfgC3Title') || APP_CONFIG.c3Title;
+      APP_CONFIG.c3Hours = getVal('cfgC3Hours') || APP_CONFIG.c3Hours;
+      APP_CONFIG.c3Desc = getVal('cfgC3Desc') || APP_CONFIG.c3Desc;
+
+      const newPin = getVal('cfgNewPin');
+      if (newPin && newPin.length === 4) {
+        APP_CONFIG.pin = newPin;
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
+        showToast('¡Todos los cambios se guardaron y sincronizaron con index.html!');
+      } catch (e) {
+        alert('Error al guardar en el almacenamiento local: ' + e.message);
+      }
+    }
+
+    function restoreFactoryDefaults() {
+      if (confirm('¿Restaurar toda la configuración a los valores originales de fábrica?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        APP_CONFIG = { ...DEFAULT_CONFIG };
+        populateForm();
+        showToast('Configuración restaurada a valores de fábrica.');
+      }
+    }
+
+    // 6. EXPORTAR HTML
+    function exportUpdatedHTML() {
+      saveAllChanges();
+      alert('Para descargar el archivo index.html completo con todos los cambios incluidos, visita la web principal y pulsa "Descargar index.html" en el panel.');
+    }
+
+    // 7. SISTEMA DE AUTENTICACIÓN
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('ownerPinInput');
+      const err = document.getElementById('authErrorMsg');
+      const validPin = APP_CONFIG.pin || DEFAULT_CONFIG.pin;
+
+      if (input && input.value.trim() === validPin) {
+        sessionStorage.setItem('HT_ADMIN_AUTHENTICATED', 'true');
+        document.getElementById('authOverlay').classList.add('unlocked');
+        if (err) err.style.display = 'none';
+        showToast('¡Bienvenido al Centro de Mando Happy Tactical!');
+      } else {
+        if (err) err.style.display = 'block';
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
+    function checkAuth() {
+      if (sessionStorage.getItem('HT_ADMIN_AUTHENTICATED') === 'true') {
+        document.getElementById('authOverlay').classList.add('unlocked');
+      }
+    }
+
+    function lockAdmin() {
+      sessionStorage.removeItem('HT_ADMIN_AUTHENTICATED');
+      document.getElementById('authOverlay').classList.remove('unlocked');
+      const input = document.getElementById('ownerPinInput');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    // 8. INTERFAZ Y NAVEGACIÓN
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+
+      const target = document.getElementById(tabId);
+      if (target) target.classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('adminToast');
+      const txt = document.getElementById('toastMsg');
+      if (txt) txt.textContent = msg;
+      if (toast) {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3500);
+      }
+    }
+
+    // Inicializar al cargar
+    document.addEventListener('DOMContentLoaded', () => {
+      loadConfig();
+      checkAuth();
+    });
+  </script>
+</body>
+</html>
