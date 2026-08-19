@@ -5939,6 +5939,7 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
     // ========================================================================
     // MOTOR DEFINITIVO DE CURSOR TÁCTICO HUD (SOLO ESCRITORIO CON NATIVE HOVER)
     // ========================================================================
+    document.addEventListener("DOMContentLoaded", function() {
     (function initHudCursorEngine() {
       const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
       if (!isFinePointer) return; // En móvil o pantallas táctiles no ejecutar nada
@@ -6050,6 +6051,7 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
 
       window.addEventListener('pointermove', onPointerMove, { passive: true });
     })();
+    }); // end DOMContentLoaded
     
 </script>
 
