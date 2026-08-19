@@ -4240,7 +4240,7 @@
       if (!firestoreDB) return;
       try {
         firestoreDB.collection('happytactical').doc('global_config')
-          .onSnapshot((doc) => {
+          .onSnapshot(async (doc) => {
             if (doc.exists) {
               const cloudData = doc.data();
               console.log('⚡ Sincronización en Tiempo Real desde Firebase Cloud recibida');
@@ -4254,9 +4254,17 @@
               if (cloudData.schedule && Array.isArray(cloudData.schedule)) {
                 HT_CONFIG.schedule = cloudData.schedule;
               }
+              if (cloudData.images && typeof cloudData.images === 'object') {
+                HT_CONFIG.images = cloudData.images;
+                for (const slot of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
+                  if (cloudData.images[slot]) {
+                    HT_ACTIVE_IMAGES[slot] = cloudData.images[slot];
+                    saveImageToDB(slot, cloudData.images[slot]);
+                  }
+                }
+              }
               applyConfigToDOM();
-      initFirebaseRealtimeSync();
-              renderGalleryStream();
+              await renderGalleryStream();
               if (typeof renderTacticalVideos === 'function') renderTacticalVideos();
               if (typeof renderScheduleList === 'function') renderScheduleList();
             }
@@ -4302,6 +4310,13 @@
         const customSrc = await getImageFromDB(slot);
         if (customSrc) {
           HT_ACTIVE_IMAGES[slot] = customSrc;
+          if (!HT_CONFIG.imageMeta[slot]) {
+            HT_CONFIG.imageMeta[slot] = { fit: slot === 'logo' ? 'contain' : 'cover', position: slot === 'hero' ? 'right center' : 'center center', scale: 1.0, hasCustom: true };
+          } else {
+            HT_CONFIG.imageMeta[slot].hasCustom = true;
+          }
+        } else if (HT_CONFIG.images && HT_CONFIG.images[slot]) {
+          HT_ACTIVE_IMAGES[slot] = HT_CONFIG.images[slot];
           if (!HT_CONFIG.imageMeta[slot]) {
             HT_CONFIG.imageMeta[slot] = { fit: slot === 'logo' ? 'contain' : 'cover', position: slot === 'hero' ? 'right center' : 'center center', scale: 1.0, hasCustom: true };
           } else {

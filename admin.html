@@ -1666,6 +1666,21 @@
         if (saved) {
           APP_CONFIG = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
         }
+
+        // Intenta sincronizar datos más recientes desde Firebase Cloud
+        if (firestoreDB) {
+          try {
+            const cloudDoc = await firestoreDB.collection('happytactical').doc('global_config').get();
+            if (cloudDoc.exists) {
+              const cloudData = cloudDoc.data();
+              console.log('✓ Datos frescos cargados desde Firebase Cloud en Admin');
+              APP_CONFIG = { ...DEFAULT_CONFIG, ...cloudData };
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
+            }
+          } catch(eCloud) {
+            console.warn('No se pudo conectar a Firebase Cloud al iniciar:', eCloud);
+          }
+        }
       } catch (e) {
         console.error('Error cargando configuración:', e);
       }
