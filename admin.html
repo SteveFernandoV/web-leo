@@ -2592,7 +2592,7 @@ Revisa la consola para más detalles.`);
       return null;
     }
     
-    function saveAllChanges() {
+    async function saveAllChanges(showFeedback = true) {
       const getVal = (id) => {
         const el = document.getElementById(id);
         return el ? el.value.trim() : '';
@@ -2625,13 +2625,23 @@ Revisa la consola para más detalles.`);
       APP_CONFIG.c3Hours = getVal('cfgC3Hours') || APP_CONFIG.c3Hours;
       APP_CONFIG.c3Desc = getVal('cfgC3Desc') || APP_CONFIG.c3Desc;
 
+      // Extraer fotos de los campos
+      if (!APP_CONFIG.images) APP_CONFIG.images = {};
+      const imgSlots = ['logo', 'hero', 'about', 'c1', 'c2', 'c3'];
+      for (const s of imgSlots) {
+        const val = getVal(`input_img_${s}`);
+        if (val) APP_CONFIG.images[s] = val;
+      }
+
       const newPin = getVal('cfgNewPin');
       if (newPin && newPin.length === 4) {
         APP_CONFIG.pin = newPin;
       }
 
-      // Guardar en la Nube Global de Firebase
-      saveToFirebaseCloud(APP_CONFIG);
+      if (showFeedback) showToast('⏳ Sincronizando con Firebase Cloud...');
+
+      // Guardar en la Nube Global de Firebase con AWAIT
+      const cloudSuccess = await saveToFirebaseCloud(APP_CONFIG);
 
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
@@ -2643,7 +2653,7 @@ Revisa la consola para más detalles.`);
         }
         const userDisplay = document.getElementById('displayUsername');
         if (userDisplay) userDisplay.textContent = APP_CONFIG.user;
-        if (showFeedback) showToast('¡Cambios guardados globalmente en Firebase!');
+        if (showFeedback) { if (cloudSuccess) { showToast('✅ ¡Cambios y fotos sincronizados en Firebase!'); alert('✅ ¡CAMBIOS GUARDADOS EN LA NUBE!\n\nLos textos, cursos y fotografías se guardaron exitosamente en Firebase y ya están visibles en todos tus dispositivos.'); } else { showToast('⚠️ Guardado localmente.'); } }
       } catch (e) {
         // Quota fallback: if localStorage quota exceeded, sanitize heavy base64 strings in localStorage copy while keeping them safe in IndexedDB
         try {
