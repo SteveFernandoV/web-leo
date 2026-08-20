@@ -4155,8 +4155,8 @@
     function compressImageFile(file, slotKey = '') {
       return new Promise((resolve, reject) => {
         const isLogo = slotKey === 'logo';
-        const maxDimension = isLogo ? 600 : 1400;
-        const quality = isLogo ? 0.92 : 0.85;
+        const maxDimension = isLogo ? 600 : 1200;
+        const quality = isLogo ? 0.90 : 0.78;
         const reader = new FileReader();
 
         reader.onload = (e) => {
@@ -4235,7 +4235,7 @@
 
     // --- Hydration & Synchronization ---
     
-    // --- Escucha en Tiempo Real Multi-Documento desde Firebase Cloud Firestore ---
+    // --- Escucha en Tiempo Real Multi-Colección desde Firebase Cloud Firestore ---
     function initFirebaseRealtimeSync() {
       if (!firestoreDB) return;
       try {
@@ -4254,35 +4254,44 @@
             }
           }, err => console.warn('Aviso config listener:', err));
 
-        // 2. Escuchar Fotos de Identidad Visual (Logo, Hero, About, C1, C2, C3)
-        firestoreDB.collection('happytactical').doc('global_images')
-          .onSnapshot((doc) => {
-            if (doc.exists && doc.data().images) {
-              const imgs = doc.data().images;
-              console.log('⚡ Sincronización [global_images] recibida');
-              HT_CONFIG.images = imgs;
-              for (const slot of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
-                if (imgs[slot]) {
-                  HT_ACTIVE_IMAGES[slot] = imgs[slot];
-                  saveImageToDB(slot, imgs[slot]);
+        // 2. Escuchar cada Slot de Foto Individualmente
+        for (const slotKey of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
+          firestoreDB.collection('happytactical_slots').doc(slotKey)
+            .onSnapshot((doc) => {
+              if (doc.exists && doc.data().data) {
+                const src = doc.data().data;
+                console.log(`⚡ Sincronización foto [${slotKey}] recibida`);
+                if (!HT_CONFIG.images) HT_CONFIG.images = {};
+                HT_CONFIG.images[slotKey] = src;
+                HT_ACTIVE_IMAGES[slotKey] = src;
+                saveImageToDB(slotKey, src);
+                applyImagesAndFraming();
+              }
+            }, err => console.warn(`Aviso slot listener [${slotKey}]:`, err));
+        }
+
+        // 3. Escuchar Metadatos de Galería y Fotos
+        firestoreDB.collection('happytactical').doc('global_gallery_meta')
+          .onSnapshot(async (doc) => {
+            if (doc.exists && doc.data().galleryList) {
+              const galList = doc.data().galleryList;
+              for (const gItem of galList) {
+                if (gItem.url && gItem.url.startsWith('cloud_slot:')) {
+                  try {
+                    const gDoc = await firestoreDB.collection('happytactical_gallery').doc(gItem.id).get();
+                    if (gDoc.exists && gDoc.data().data) {
+                      gItem.url = gDoc.data().data;
+                    }
+                  } catch(e) {}
                 }
               }
-              applyImagesAndFraming();
-            }
-          }, err => console.warn('Aviso images listener:', err));
-
-        // 3. Escuchar Galería de Fotos Operativas
-        firestoreDB.collection('happytactical').doc('global_gallery')
-          .onSnapshot(async (doc) => {
-            if (doc.exists && doc.data().galleryImages) {
-              console.log('⚡ Sincronización [global_gallery] recibida');
-              HT_CONFIG.galleryImages = doc.data().galleryImages;
+              HT_CONFIG.galleryImages = galList;
               await renderGalleryStream();
             }
           }, err => console.warn('Aviso gallery listener:', err));
 
       } catch (errListener) {
-        console.warn('Error inicializando escucha multi-doc Firebase:', errListener);
+        console.warn('Error inicializando escucha multi-colección Firebase:', errListener);
       }
     }
     

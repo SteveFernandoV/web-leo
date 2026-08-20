@@ -1426,8 +1426,8 @@
     function compressImageFile(file, slotKey = '') {
       return new Promise((resolve, reject) => {
         const isLogo = slotKey === 'logo';
-        const maxDimension = isLogo ? 600 : 1400;
-        const quality = isLogo ? 0.92 : 0.85;
+        const maxDimension = isLogo ? 600 : 1200;
+        const quality = isLogo ? 0.90 : 0.78;
         const reader = new FileReader();
 
         reader.onload = (e) => {
@@ -2440,17 +2440,18 @@ Revisa la consola para más detalles.`);
     // 5. GUARDAR Y PERSISTIR
 
     // ========================================================================
-    // PERSISTENCIA GLOBAL CLOUD MULTI-DOCUMENTO // FIREBASE FIRESTORE
+    // PERSISTENCIA GLOBAL CLOUD ULTRA-RESILIENTE // FIREBASE FIRESTORE
     // ========================================================================
     async function saveToFirebaseCloud(configData) {
       if (!firestoreDB) {
         console.warn('Firebase no inicializado');
         return false;
       }
+      const now = new Date().toISOString();
+      let hasError = false;
+
+      // 1. Guardar Config General (Textos, Cursos, Videos, Fechas)
       try {
-        const now = new Date().toISOString();
-        
-        // Doc 1: Config general, textos, videos, fechas
         const baseConfig = {
           user: configData.user || 'admin',
           pin: configData.pin || '7788',
@@ -2481,55 +2482,112 @@ Revisa la consola para más detalles.`);
           imageMeta: configData.imageMeta || {},
           updatedAt: now
         };
-
-        // Guardar Doc 1
         await firestoreDB.collection('happytactical').doc('global_config').set(baseConfig, { merge: true });
-
-        // Doc 2: Fotos de Identidad Visual (Logo, Hero, About, Cursos)
-        if (configData.images && Object.keys(configData.images).length > 0) {
-          await firestoreDB.collection('happytactical').doc('global_images').set({
-            images: configData.images,
-            updatedAt: now
-          }, { merge: true });
-        }
-
-        // Doc 3: Galería de fotos operativas
-        if (configData.galleryImages && Array.isArray(configData.galleryImages)) {
-          await firestoreDB.collection('happytactical').doc('global_gallery').set({
-            galleryImages: configData.galleryImages,
-            updatedAt: now
-          }, { merge: true });
-        }
-
-        console.log('✓ Sincronización exitosa en Firebase Cloud Multi-Doc');
-        return true;
-      } catch (errCloud) {
-        console.error('Error guardando en Firebase Cloud:', errCloud);
-        alert('⚠️ Aviso Firebase: ' + (errCloud.message || 'Error de conexión a la nube'));
-        return false;
+        console.log('✓ Configuración y textos guardados en Firestore');
+      } catch (errCfg) {
+        console.error('Error guardando config:', errCfg);
+        hasError = true;
       }
+
+      // 2. Guardar cada imagen de slot en su propio documento individual
+      if (configData.images && typeof configData.images === 'object') {
+        for (const slotKey of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
+          const imgData = configData.images[slotKey];
+          if (imgData && imgData.startsWith('data:')) {
+            try {
+              await firestoreDB.collection('happytactical_slots').doc(slotKey).set({
+                slot: slotKey,
+                data: imgData,
+                updatedAt: now
+              });
+              console.log(`✓ Foto [${slotKey}] guardada individualmente en Firestore`);
+            } catch (errSlot) {
+              console.error(`Error guardando foto [${slotKey}]:`, errSlot);
+              hasError = true;
+            }
+          }
+        }
+      }
+
+      // 3. Guardar fotos de galería individualmente
+      if (configData.galleryImages && Array.isArray(configData.galleryImages)) {
+        // Guardar lista de metadatos en doc de galería
+        try {
+          const galleryMeta = configData.galleryImages.map(img => ({
+            id: img.id,
+            title: img.title || '',
+            badge: img.badge || 'TÁCTICO',
+            location: img.location || 'Happy Tactical',
+            url: img.url && !img.url.startsWith('data:') ? img.url : `cloud_slot:${img.id}`
+          }));
+          await firestoreDB.collection('happytactical').doc('global_gallery_meta').set({
+            galleryList: galleryMeta,
+            updatedAt: now
+          }, { merge: true });
+
+          // Guardar cada foto base64 pesada en su propio documento
+          for (const gImg of configData.galleryImages) {
+            if (gImg.url && gImg.url.startsWith('data:')) {
+              await firestoreDB.collection('happytactical_gallery').doc(gImg.id).set({
+                id: gImg.id,
+                title: gImg.title || '',
+                data: gImg.url,
+                updatedAt: now
+              });
+            }
+          }
+          console.log('✓ Galería guardada individualmente en Firestore');
+        } catch (errGal) {
+          console.error('Error guardando galería:', errGal);
+          hasError = true;
+        }
+      }
+
+      return !hasError;
     }
 
     async function loadFromFirebaseCloud() {
       if (!firestoreDB) return null;
       try {
-        const [docCfg, docImgs, docGal] = await Promise.all([
-          firestoreDB.collection('happytactical').doc('global_config').get(),
-          firestoreDB.collection('happytactical').doc('global_images').get(),
-          firestoreDB.collection('happytactical').doc('global_gallery').get()
-        ]);
-
         let merged = {};
+        // 1. Cargar config general
+        const docCfg = await firestoreDB.collection('happytactical').doc('global_config').get();
         if (docCfg.exists) merged = Object.assign(merged, docCfg.data());
-        if (docImgs.exists && docImgs.data().images) merged.images = docImgs.data().images;
-        if (docGal.exists && docGal.data().galleryImages) merged.galleryImages = docGal.data().galleryImages;
+
+        // 2. Cargar fotos individuales de slots
+        merged.images = {};
+        for (const slotKey of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
+          try {
+            const slotDoc = await firestoreDB.collection('happytactical_slots').doc(slotKey).get();
+            if (slotDoc.exists && slotDoc.data().data) {
+              merged.images[slotKey] = slotDoc.data().data;
+            }
+          } catch(eSlot) {}
+        }
+
+        // 3. Cargar metadatos de galería y fotos
+        try {
+          const galMetaDoc = await firestoreDB.collection('happytactical').doc('global_gallery_meta').get();
+          if (galMetaDoc.exists && galMetaDoc.data().galleryList) {
+            const galList = galMetaDoc.data().galleryList;
+            for (const gItem of galList) {
+              if (gItem.url && gItem.url.startsWith('cloud_slot:')) {
+                const gDoc = await firestoreDB.collection('happytactical_gallery').doc(gItem.id).get();
+                if (gDoc.exists && gDoc.data().data) {
+                  gItem.url = gDoc.data().data;
+                }
+              }
+            }
+            merged.galleryImages = galList;
+          }
+        } catch(eGal) {}
 
         if (Object.keys(merged).length > 0) {
-          console.log('✓ Datos globales multi-documento cargados de Firebase Cloud');
+          console.log('✓ Datos globales multi-colección cargados de Firebase Cloud');
           return merged;
         }
       } catch (errCloud) {
-        console.warn('Error leyendo Firebase Cloud multi-doc:', errCloud);
+        console.warn('Error leyendo Firebase Cloud:', errCloud);
       }
       return null;
     }
