@@ -2493,7 +2493,7 @@ Revisa la consola para más detalles.`);
       if (configData.images && typeof configData.images === 'object') {
         for (const slotKey of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
           const imgData = configData.images[slotKey];
-          if (imgData && imgData.startsWith('data:')) {
+          if (imgData && imgData.length > 5) {
             try {
               await firestoreDB.collection('happytactical_slots').doc(slotKey).set({
                 slot: slotKey,

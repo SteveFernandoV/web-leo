@@ -3826,6 +3826,30 @@
        10. JAVASCRIPT & HIGH PERFORMANCE 3D ENGINE (60/120 FPS)
        ========================================================================== -->
   <script>
+    // --- Inicialización Nube Global Firebase Firestore ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeWp7TBvy5CAiTFCZToA6JEsK8xL3NVoQ",
+      authDomain: "bdhappytactical.firebaseapp.com",
+      projectId: "bdhappytactical",
+      storageBucket: "bdhappytactical.firebasestorage.app",
+      messagingSenderId: "502378570561",
+      appId: "1:502378570561:web:0f6a666e6e6a4f5e17f7c0",
+      measurementId: "G-2641CT74L4"
+    };
+
+    let firestoreDB = null;
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        firestoreDB = firebase.firestore();
+        console.log('⚡ Firebase Firestore conectado exitosamente en Cliente Público');
+      }
+    } catch(e) {
+      console.warn('Firebase init warning:', e);
+    }
+
     const DEFAULT_ASSETS = {
       logo: 'assets/images/img_930ab638.png',
       hero: 'assets/images/img_7062ad4f.png',
@@ -4299,68 +4323,141 @@
       }
     }
     
-    async function loadSavedConfig() {
+                // ========================================================================
+    // MOTOR DE HIDRATACIÓN CLOUD HÍBRIDO ULTRA-RÁPIDO (REST + FIRESTORE SDK)
+    // ========================================================================
+    function parseFirestoreValue(val) {
+      if (!val) return null;
+      if (val.stringValue !== undefined) return val.stringValue;
+      if (val.integerValue !== undefined) return parseInt(val.integerValue, 10);
+      if (val.doubleValue !== undefined) return parseFloat(val.doubleValue);
+      if (val.booleanValue !== undefined) return val.booleanValue;
+      if (val.arrayValue && val.arrayValue.values) {
+        return val.arrayValue.values.map(item => parseFirestoreValue(item));
+      }
+      if (val.mapValue && val.mapValue.fields) {
+        const obj = {};
+        for (const [k, v] of Object.entries(val.mapValue.fields)) {
+          obj[k] = parseFirestoreValue(v);
+        }
+        return obj;
+      }
+      return null;
+    }
+
+    async function fetchCloudDataREST() {
       try {
-        let saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) {
-          saved = localStorage.getItem('HT_CUSTOM_CONFIG_V2') || localStorage.getItem('HT_CONFIG_PROD_V3');
-          if (saved) {
-            localStorage.setItem(STORAGE_KEY, saved);
+        const BASE_URL = 'https://firestore.googleapis.com/v1/projects/bdhappytactical/databases/(default)/documents';
+        
+        // 1. Descarga Config y Textos
+        const resCfg = await fetch(`${BASE_URL}/happytactical/global_config?ts=${Date.now()}`);
+        if (resCfg.ok) {
+          const jsonCfg = await resCfg.json();
+          if (jsonCfg.fields) {
+            const parsed = {};
+            for (const [k, v] of Object.entries(jsonCfg.fields)) {
+              parsed[k] = parseFirestoreValue(v);
+            }
+            HT_CONFIG = Object.assign({}, DEFAULT_CONFIG, parsed);
+            if (parsed.videos && Array.isArray(parsed.videos)) HT_CONFIG.videos = parsed.videos;
+            if (parsed.schedule && Array.isArray(parsed.schedule)) HT_CONFIG.schedule = parsed.schedule;
+            console.log('⚡ [REST Cloud] Textos y configuración global hidratados');
+            applyConfigToDOM();
           }
         }
+
+        // 2. Descarga Slots de Fotos en Paralelo
+        if (!HT_CONFIG.images) HT_CONFIG.images = {};
+        const slots = ['logo', 'hero', 'about', 'c1', 'c2', 'c3'];
+        await Promise.all(slots.map(async (slotKey) => {
+          try {
+            const resSlot = await fetch(`${BASE_URL}/happytactical_slots/${slotKey}?ts=${Date.now()}`);
+            if (resSlot.ok) {
+              const jsonSlot = await resSlot.json();
+              if (jsonSlot.fields && jsonSlot.fields.data) {
+                const src = parseFirestoreValue(jsonSlot.fields.data);
+                if (src) {
+                  HT_CONFIG.images[slotKey] = src;
+                  HT_ACTIVE_IMAGES[slotKey] = src;
+                  saveImageToDB(slotKey, src);
+                }
+              }
+            }
+          } catch(eSlot) {}
+        }));
+
+        // 3. Descarga Galería
+        try {
+          const resGal = await fetch(`${BASE_URL}/happytactical/global_gallery_meta?ts=${Date.now()}`);
+          if (resGal.ok) {
+            const jsonGal = await resGal.json();
+            if (jsonGal.fields && jsonGal.fields.galleryList) {
+              const list = parseFirestoreValue(jsonGal.fields.galleryList);
+              if (Array.isArray(list)) {
+                await Promise.all(list.map(async (gItem) => {
+                  if (gItem.url && gItem.url.startsWith('cloud_slot:')) {
+                    try {
+                      const resGImg = await fetch(`${BASE_URL}/happytactical_gallery/${gItem.id}?ts=${Date.now()}`);
+                      if (resGImg.ok) {
+                        const jsonG = await resGImg.json();
+                        if (jsonG.fields && jsonG.fields.data) {
+                          gItem.url = parseFirestoreValue(jsonG.fields.data);
+                        }
+                      }
+                    } catch(eG) {}
+                  }
+                }));
+                HT_CONFIG.galleryImages = list;
+              }
+            }
+          }
+        } catch(eGal) {}
+
+        // Aplicar a DOM y guardar en almacenamiento local
+        applyConfigToDOM();
+        applyImagesAndFraming();
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(HT_CONFIG)); } catch(e) {}
+      } catch (errRest) {
+        console.warn('Aviso REST Cloud fetch:', errRest);
+      }
+    }
+
+    async function loadSavedConfig() {
+      // 1. Render inmediato desde LocalStorage
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
           HT_CONFIG = Object.assign({}, DEFAULT_CONFIG, parsed);
-          if (parsed.imageMeta) {
-            HT_CONFIG.imageMeta = Object.assign({}, DEFAULT_CONFIG.imageMeta, parsed.imageMeta);
-          }
-          if (parsed.schedule && Array.isArray(parsed.schedule)) {
-            HT_CONFIG.schedule = parsed.schedule;
-          }
-          if (parsed.galleryImages && Array.isArray(parsed.galleryImages)) {
-            HT_CONFIG.galleryImages = parsed.galleryImages;
-          }
-          if (parsed.videos && Array.isArray(parsed.videos)) {
-            HT_CONFIG.videos = parsed.videos;
-          }
+          applyConfigToDOM();
         }
-      } catch (e) {
-        console.warn('Config load warning', e);
-      }
+      } catch (e) {}
 
+      // 2. Hidratación Directa Garantizada desde la Nube
+      await fetchCloudDataREST();
+
+      // 3. Hidratación de imágenes activas
       const slots = ['logo', 'hero', 'about', 'c1', 'c2', 'c3'];
       for (const slot of slots) {
-        const customSrc = await getImageFromDB(slot);
-        if (customSrc) {
-          HT_ACTIVE_IMAGES[slot] = customSrc;
-          if (!HT_CONFIG.imageMeta[slot]) {
-            HT_CONFIG.imageMeta[slot] = { fit: slot === 'logo' ? 'contain' : 'cover', position: slot === 'hero' ? 'right center' : 'center center', scale: 1.0, hasCustom: true };
+        if (!HT_ACTIVE_IMAGES[slot] || HT_ACTIVE_IMAGES[slot] === DEFAULT_ASSETS[slot]) {
+          const customSrc = await getImageFromDB(slot);
+          if (customSrc) {
+            HT_ACTIVE_IMAGES[slot] = customSrc;
+          } else if (HT_CONFIG.images && HT_CONFIG.images[slot]) {
+            HT_ACTIVE_IMAGES[slot] = HT_CONFIG.images[slot];
           } else {
-            HT_CONFIG.imageMeta[slot].hasCustom = true;
-          }
-        } else if (HT_CONFIG.images && HT_CONFIG.images[slot]) {
-          HT_ACTIVE_IMAGES[slot] = HT_CONFIG.images[slot];
-          if (!HT_CONFIG.imageMeta[slot]) {
-            HT_CONFIG.imageMeta[slot] = { fit: slot === 'logo' ? 'contain' : 'cover', position: slot === 'hero' ? 'right center' : 'center center', scale: 1.0, hasCustom: true };
-          } else {
-            HT_CONFIG.imageMeta[slot].hasCustom = true;
-          }
-        } else {
-          HT_ACTIVE_IMAGES[slot] = DEFAULT_ASSETS[slot];
-        }
-      }
-
-      // Hydrate gallery images from IndexedDB
-      if (HT_CONFIG.galleryImages && Array.isArray(HT_CONFIG.galleryImages)) {
-        for (const imgItem of HT_CONFIG.galleryImages) {
-          if (imgItem.id) {
-            const dbImg = await getImageFromDB(imgItem.id);
-            if (dbImg) imgItem.url = dbImg;
+            HT_ACTIVE_IMAGES[slot] = DEFAULT_ASSETS[slot];
           }
         }
       }
 
       applyConfigToDOM();
+      applyImagesAndFraming();
+      if (typeof renderTacticalVideos === 'function') renderTacticalVideos();
+      if (typeof renderScheduleList === 'function') renderScheduleList();
+      if (typeof renderGalleryStream === 'function') renderGalleryStream();
+
+      // 4. Conectar escucha continua en tiempo real
       initFirebaseRealtimeSync();
     }
 
