@@ -456,6 +456,17 @@
       filter: brightness(0.92) contrast(1.05);
       transition: transform 0.35s var(--ease-out), object-position 0.35s;
     }
+    /* Evita mostrar las imágenes incluidas en el HTML mientras se hidrata
+       la versión vigente guardada en la nube. */
+    body.cloud-hydrating #heroBgImg,
+    body.cloud-hydrating #aboutPhotoImg,
+    body.cloud-hydrating #c1Img,
+    body.cloud-hydrating #c2Img,
+    body.cloud-hydrating #c3Img,
+    body.cloud-hydrating #mainNavLogo,
+    body.cloud-hydrating #mainFooterLogo {
+      visibility: hidden;
+    }
     .hero-bg-overlay {
       position: absolute;
       inset: 0;
@@ -5934,7 +5945,8 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
     function bootstrapApp() {
       if (appBootstrapped) return;
       appBootstrapped = true;
-      loadSavedConfig();
+      document.body.classList.add('cloud-hydrating');
+      loadSavedConfig().finally(() => document.body.classList.remove('cloud-hydrating'));
       init3DTilt();
     }
 
