@@ -3062,14 +3062,24 @@ Revisa la consola para más detalles.`);
       };
 
       showToast('⏳ Guardando fotos en base de datos...');
+      // Las fotos se guardan en documentos independientes. Así un fallo en
+      // otro módulo (textos, cursos o agenda) no bloquea la publicación.
+      let saved = true;
       for (const [key, val] of Object.entries(slots)) {
-        if (val) {
-          if (!APP_CONFIG.images) APP_CONFIG.images = {};
-          APP_CONFIG.images[key] = val;
-        }
+        if (!val) continue;
+        if (!APP_CONFIG.images) APP_CONFIG.images = {};
+        APP_CONFIG.images[key] = val;
+        const storagePath = APP_CONFIG.imageStoragePaths?.[key] || '';
+        const slotSaved = await saveImageSlotToFirebase(key, val, storagePath);
+        if (!slotSaved) saved = false;
       }
-      const saved = await saveAllChanges(false);
-      showToast(saved ? '✓ Todas las fotos han sido publicadas.' : '❌ No se pudieron publicar las fotos.');
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
+        if (syncChannel) syncChannel.postMessage({ type: 'config_updated' });
+      } catch (e) {
+        console.warn('No se pudo actualizar la copia local de fotos:', e);
+      }
+      showToast(saved ? '✓ Todas las fotos han sido publicadas.' : '❌ No se pudieron publicar algunas fotos. Revisa tu sesión.');
     }
 
     // Modal para agregar foto a la galería desde dispositivo o URL
