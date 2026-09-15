@@ -4971,11 +4971,17 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
 
       // Duplicate list to achieve continuous seamless loop
       const doubled = [...imgList, ...imgList];
+      const localGalleryFallbacks = [
+        'assets/images/demo_test_tccc.jpg',
+        'assets/images/demo_test_hero.jpg',
+        'assets/images/img_2d71eb4f.jpg',
+        'assets/images/img_e7a7146c.jpg'
+      ];
 
       const makeCardHtml = (item, idx) => `
         <div class="gallery-stream-item" onclick="openTacticalLightbox('${item.id || 'gal-' + idx}')" role="button" tabindex="0" aria-label="Ver imagen ampliada: ${item.title}">
           <span class="gallery-telemetry-tag">CAM-0${(idx % 8) + 1} // HD</span>
-          <img src="${item.url || 'assets/images/demo_test_tccc.jpg'}" alt="${item.title}" class="gallery-stream-img" loading="lazy" onerror="this.onerror=null;this.src='assets/images/demo_test_tccc.jpg'">
+          <img src="${(item.url && !item.url.includes('images.unsplash.com')) ? item.url : localGalleryFallbacks[idx % localGalleryFallbacks.length]}" alt="${item.title}" class="gallery-stream-img" loading="lazy" onerror="this.onerror=null;this.src='assets/images/demo_test_tccc.jpg'">
           <div class="gallery-stream-overlay">
             <span class="gallery-badge">${item.badge || 'TÁCTICO'}</span>
             <div>
@@ -5042,6 +5048,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
       const waBtn = document.getElementById('lightboxWhatsAppBtn');
 
       let resolvedSrc = item.url;
+      if (resolvedSrc && resolvedSrc.includes('images.unsplash.com')) resolvedSrc = 'assets/images/demo_test_tccc.jpg';
       if (item.id && (!resolvedSrc || resolvedSrc.startsWith('HappyTacticalMediaDB:'))) {
         const dbSrc = await getImageFromDB(item.id);
         if (dbSrc) resolvedSrc = dbSrc;
