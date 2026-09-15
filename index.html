@@ -4549,10 +4549,21 @@
     function applyImagesAndFraming() {
       const meta = HT_CONFIG.imageMeta || DEFAULT_CONFIG.imageMeta;
 
+      const setImageSourceWithFallback = (el, src, fallback) => {
+        if (!el) return;
+        const safeFallback = fallback || '';
+        el.onerror = () => {
+          if (!safeFallback) return;
+          el.onerror = null;
+          el.src = safeFallback;
+        };
+        el.src = src || safeFallback;
+      };
+
       const logoSrc = HT_ACTIVE_IMAGES.logo;
       ['mainNavLogo', 'mainFooterLogo', 'prevImgLogo'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.src = logoSrc;
+        setImageSourceWithFallback(el, logoSrc, DEFAULT_ASSETS.logo);
       });
 
       const mapSlots = [
@@ -4569,7 +4580,7 @@
         els.forEach(id => {
           const el = document.getElementById(id);
           if (el) {
-            el.src = src;
+            setImageSourceWithFallback(el, src, DEFAULT_ASSETS[slot]);
             el.style.objectFit = m.fit || 'cover';
             el.style.objectPosition = m.position || 'center center';
             el.style.transform = (m.scale && m.scale > 1) ? `scale(${m.scale})` : 'none';

@@ -2197,7 +2197,9 @@
         }
 
         // Guardar en Firebase únicamente los metadatos y la URL pública.
-        let cloudSaved = await saveToFirebaseCloud(APP_CONFIG);
+        // La galería también se confirma de forma aislada: un fallo ajeno no
+        // debe dejar metadatos apuntando a un Blob que acabamos de borrar.
+        let cloudSaved = await saveGalleryMetaToFirebase(APP_CONFIG.galleryImages);
         if (!cloudSaved) throw new Error('La foto se subió, pero Firebase no pudo publicar su información.');
 
         // 2. Guardar en LocalStorage con blindaje de cuota
@@ -2969,12 +2971,23 @@ Revisa la consola para más detalles.`);
           if (!APP_CONFIG.imageStoragePaths) APP_CONFIG.imageStoragePaths = {};
           APP_CONFIG.images[slotKey] = uploaded.url;
           APP_CONFIG.imageStoragePaths[slotKey] = uploaded.pathname;
-          const cloudSaved = await saveAllChanges(false);
+          // Guardar únicamente este slot evita que un fallo en textos, videos o
+          // galería borre la imagen recién subida y deje una URL rota en Firestore.
+          const cloudSaved = await saveImageSlotToFirebase(slotKey, uploaded.url, uploaded.pathname);
           if (!cloudSaved) {
             await deleteImageFromVercel(uploaded.url);
             APP_CONFIG.images[slotKey] = previousUrl;
             APP_CONFIG.imageStoragePaths[slotKey] = previousStoragePath;
+            if (inputEl) inputEl.value = previousUrl;
+            if (previewEl) previewEl.src = previousUrl;
             throw new Error('Firebase no pudo publicar el enlace de la nueva imagen.');
+          }
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG)); } catch (eStorage) { /* opcional */ }
+          if (syncChannel) {
+            try {
+              syncChannel.postMessage({ type: 'config_updated' });
+              syncChannel.postMessage({ type: 'image_updated', key: slotKey });
+            } catch (eSync) { /* opcional */ }
           }
           if (previousUrl && previousUrl !== uploaded.url) {
             deleteImageFromVercel(previousUrl).catch(() => false);
@@ -2986,6 +2999,47 @@ Revisa la consola para más detalles.`);
       } catch (err) {
         console.error('Error procesando imagen', err);
         showToast('❌ Error al procesar la imagen.');
+      }
+    }
+
+    async function saveImageSlotToFirebase(slotKey, url, storagePath = '') {
+      if (!firestoreDB || !slotKey || !url) return false;
+      try {
+        await firestoreDB.collection('happytactical_slots').doc(slotKey).set({
+          slot: slotKey,
+          data: url,
+          url,
+          storagePath,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        return true;
+      } catch (err) {
+        console.error(`Error guardando foto [${slotKey}] individualmente:`, err);
+        return false;
+      }
+    }
+
+    async function saveGalleryMetaToFirebase(galleryImages) {
+      if (!firestoreDB || !Array.isArray(galleryImages)) return false;
+      try {
+        const galleryMeta = galleryImages.map(img => ({
+          id: img.id,
+          title: img.title || '',
+          badge: img.badge || 'TÁCTICO',
+          location: img.location || 'Happy Tactical',
+          desc: img.desc || '',
+          createdAt: img.createdAt || '',
+          url: img.url || '',
+          storagePath: img.storagePath || ''
+        }));
+        await firestoreDB.collection('happytactical').doc('global_gallery_meta').set({
+          galleryList: galleryMeta,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        return true;
+      } catch (err) {
+        console.error('Error guardando metadatos de galería individualmente:', err);
+        return false;
       }
     }
 
