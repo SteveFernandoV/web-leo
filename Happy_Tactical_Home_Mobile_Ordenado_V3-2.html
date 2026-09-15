@@ -6045,8 +6045,8 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
           dot.style.transform = `translate3d(${clientX}px, ${clientY}px, 0) translate(-50%, -50%)`;
 
           // El aro exterior sigue con interpolación táctica lerp (0.22)
-          ringX += (clientX - ringX) * 0.22;
-          ringY += (clientY - ringY) * 0.22;
+          ringX += (clientX - ringX) * 0.3;
+          ringY += (clientY - ringY) * 0.3;
 
           // Escala: micro-compresión en clic (0.82) o expansión en hover (1.35)
           const scale = isMouseDown ? 0.82 : (isHovered ? 1.35 : 1.0);
@@ -6079,7 +6079,6 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
       }
 
       window.addEventListener('pointermove', onPointerMove, { passive: true });
-      window.addEventListener('mousemove', onPointerMove, { passive: true });
 
       // Clic: compresión reactiva
       window.addEventListener('pointerdown', (e) => {
@@ -6089,6 +6088,10 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
       }, { passive: true });
 
       window.addEventListener('pointerup', () => {
+        isMouseDown = false;
+        ring.classList.remove('clicking');
+      }, { passive: true });
+      window.addEventListener('pointercancel', () => {
         isMouseDown = false;
         ring.classList.remove('clicking');
       }, { passive: true });
@@ -6124,7 +6127,7 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
       const textSelector = 'input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]';
 
       // Delegación inteligente ultra-eficiente
-      document.addEventListener('mouseover', (e) => {
+      document.addEventListener('pointerover', (e) => {
         const target = e.target;
         if (!target || !(target instanceof Element)) return;
 
@@ -6163,7 +6166,7 @@ Por favor envíenme el cronograma disponible, costos y métodos de pago. ¡Graci
         }
       }, { passive: true });
 
-      document.addEventListener('mouseout', (e) => {
+      document.addEventListener('pointerout', (e) => {
         const related = e.relatedTarget;
         const currentTarget = e.target;
         if (!currentTarget || !(currentTarget instanceof Element)) return;
