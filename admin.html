@@ -1966,6 +1966,22 @@
       `).join('');
     }
 
+    async function deleteVideoItem(idx) {
+      if (!Array.isArray(APP_CONFIG.videos) || !APP_CONFIG.videos[idx]) return;
+      if (!confirm('¿Estás seguro de eliminar este video?')) return;
+      const removed = APP_CONFIG.videos.splice(idx, 1)[0];
+      const saved = await saveAllChanges(false);
+      if (!saved) {
+        APP_CONFIG.videos.splice(idx, 0, removed);
+        renderVideoList();
+        showToast('❌ No se pudo eliminar el video.');
+        return;
+      }
+      renderVideoList();
+      updateOverviewStats();
+      showToast('✓ Video eliminado y sincronizado');
+    }
+
     // 4. ACCIONES INTERACTIVAS
     function addNewScheduleItem() {
       const title = prompt('Título del Curso / Capacitación:');

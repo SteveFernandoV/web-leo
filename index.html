@@ -4975,7 +4975,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
       const makeCardHtml = (item, idx) => `
         <div class="gallery-stream-item" onclick="openTacticalLightbox('${item.id || 'gal-' + idx}')" role="button" tabindex="0" aria-label="Ver imagen ampliada: ${item.title}">
           <span class="gallery-telemetry-tag">CAM-0${(idx % 8) + 1} // HD</span>
-          <img src="${item.url || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80'}" alt="${item.title}" class="gallery-stream-img" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80'">
+          <img src="${item.url || 'assets/images/demo_test_tccc.jpg'}" alt="${item.title}" class="gallery-stream-img" loading="lazy" onerror="this.onerror=null;this.src='assets/images/demo_test_tccc.jpg'">
           <div class="gallery-stream-overlay">
             <span class="gallery-badge">${item.badge || 'TÁCTICO'}</span>
             <div>
