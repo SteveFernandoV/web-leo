@@ -707,6 +707,7 @@
   </style>
   <!-- FIREBASE CLOUD REAL-TIME ENGINE -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 </head>
@@ -739,26 +740,16 @@
         <span>🛡️</span> SEGURIDAD TÁCTICA // ACCESO PROPIETARIO
       </div>
       <h1 class="auth-title">CENTRO DE MANDO</h1>
-      <p class="auth-desc">Ingresa tu usuario registrado y contraseña/PIN para gestionar la plataforma.</p>
+      <p class="auth-desc">Ingresa con la cuenta de Google autorizada para gestionar y publicar el contenido.</p>
 
       <form onsubmit="handleAuthSubmit(event)">
-        <div class="form-group" style="margin-bottom: 16px; text-align: left;">
-          <label class="form-label" for="loginUser">Usuario Operador</label>
-          <input type="text" id="loginUser" class="form-input" placeholder="admin" value="admin" required>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 20px; text-align: left;">
-          <label class="form-label" for="loginPin">PIN Maestro / Contraseña</label>
-          <input type="password" id="loginPin" class="form-input" placeholder="••••" maxlength="4" style="font-size: 20px; letter-spacing: 6px; text-align: center;" autofocus required>
-        </div>
-
         <div class="auth-error" id="authErrorMsg">
-          ⚠ CREDENCIALES INCORRECTAS. REINTENTA.
+          ⚠ NO SE PUDO VALIDAR ESTA CUENTA.
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
           <a href="index.html" class="btn btn-secondary" style="flex: 1;">VOLVER A LA WEB 🌐</a>
-          <button type="submit" class="btn btn-primary" style="flex: 1;">ACCEDER 🔓</button>
+          <button type="submit" id="googleLoginBtn" class="btn btn-primary" style="flex: 1;">INGRESAR CON GOOGLE 🔐</button>
         </div>
       </form>
     </div>
@@ -1269,26 +1260,21 @@
         <section class="tab-content" id="tab-user">
           <div class="module-header">
             <div>
-              <h2 class="module-title">USUARIO REGISTRADO &amp; <span>SEGURIDAD</span></h2>
-              <p class="module-desc">Administra el usuario del propietario, cambia tu PIN y gestiona la sesión.</p>
+              <h2 class="module-title">CUENTA &amp; <span>SEGURIDAD</span></h2>
+              <p class="module-desc">Tu acceso está protegido por Firebase Authentication y tu cuenta autorizada.</p>
             </div>
           </div>
 
           <div class="interactive-card">
             <div class="card-header-bar">
               <span class="card-badge-title"><span>👤</span> Perfil del Operador Propietario</span>
-              <span class="badge-tag">AUTENTICADO</span>
+              <span class="badge-tag" id="authStatusBadge">AUTENTICADO</span>
             </div>
             <div class="form-grid">
-              <div class="form-group">
-                <label class="form-label" for="cfgAdminUser">Nombre de Usuario</label>
-                <input type="text" id="cfgAdminUser" class="form-input" placeholder="admin" value="admin">
-                <span class="form-hint">Usuario para acceder al centro de mando.</span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="cfgNewPin">PIN Maestro / Contraseña (4 dígitos)</label>
-                <input type="password" id="cfgNewPin" class="form-input" maxlength="4" placeholder="7788" style="letter-spacing: 4px;">
-                <span class="form-hint">Clave numérica de 4 dígitos.</span>
+              <div class="form-group full-width">
+                <label class="form-label">Cuenta del propietario</label>
+                <input type="text" id="authenticatedEmail" class="form-input" value="Esperando autenticación..." readonly>
+                <span class="form-hint">La contraseña se administra de forma segura en tu cuenta de Google y nunca se guarda en esta web.</span>
               </div>
             </div>
           </div>
@@ -1312,6 +1298,7 @@
             </p>
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
               <button type="button" class="btn btn-primary" onclick="exportUpdatedHTML()">Descargar index.html Actualizado 📥</button>
+              <button type="button" class="btn btn-secondary" onclick="migrateLegacyMedia()">Migrar Fotos Antiguas a la Nube ☁️</button>
               <button type="button" class="btn btn-danger" onclick="restoreFactoryDefaults()">Restaurar Valores de Fábrica 🔄</button>
             </div>
           </div>
@@ -1477,9 +1464,116 @@
       });
     }
 
+    async function uploadImageToVercel(dataUrl, section, originalName = 'imagen.jpg') {
+      const currentUser = firebaseAuth && firebaseAuth.currentUser;
+      if (!currentUser) throw new Error('Debes iniciar sesión nuevamente para publicar fotografías.');
+
+      const imageResponse = await fetch(dataUrl);
+      const imageBlob = await imageResponse.blob();
+      const idToken = await currentUser.getIdToken();
+      const extension = imageBlob.type === 'image/png' ? '.png' : imageBlob.type === 'image/webp' ? '.webp' : '.jpg';
+      const cleanBase = String(originalName).replace(/\.[^.]+$/, '') || 'imagen';
+
+      const response = await fetch(`/api/media-upload?section=${encodeURIComponent(section)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': imageBlob.type,
+          'X-File-Name': `${cleanBase}${extension}`
+        },
+        body: imageBlob
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.url) {
+        throw new Error(result.message || 'No se pudo publicar la fotografía.');
+      }
+      return result;
+    }
+
+    async function deleteImageFromVercel(url) {
+      if (!url || !url.includes('.public.blob.vercel-storage.com/')) return false;
+      const currentUser = firebaseAuth && firebaseAuth.currentUser;
+      if (!currentUser) return false;
+
+      const idToken = await currentUser.getIdToken();
+      const response = await fetch(`/api/media-delete?url=${encodeURIComponent(url)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${idToken}` }
+      });
+      return response.ok;
+    }
+
+    async function verifyCurrentAdmin(user) {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/admin-session', {
+        headers: { 'Authorization': `Bearer ${idToken}` },
+        cache: 'no-store'
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok) throw new Error(result.message || 'Cuenta no autorizada.');
+      return result.user;
+    }
+
+    async function migrateLegacyMedia(showFeedback = true) {
+      if (!firebaseAuth?.currentUser) {
+        if (showFeedback) alert('Inicia sesión con la cuenta del propietario antes de migrar fotografías.');
+        return false;
+      }
+
+      const uploadedUrls = [];
+      const previousImages = JSON.parse(JSON.stringify(APP_CONFIG.images || {}));
+      const previousPaths = JSON.parse(JSON.stringify(APP_CONFIG.imageStoragePaths || {}));
+      const previousGallery = JSON.parse(JSON.stringify(APP_CONFIG.galleryImages || []));
+      let changed = false;
+      try {
+        if (showFeedback) showToast('⏳ Migrando fotografías antiguas...');
+        if (!APP_CONFIG.images) APP_CONFIG.images = {};
+        if (!APP_CONFIG.imageStoragePaths) APP_CONFIG.imageStoragePaths = {};
+
+        for (const slot of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
+          const value = APP_CONFIG.images[slot];
+          if (value?.startsWith('data:image/')) {
+            const uploaded = await uploadImageToVercel(value, `sistema-${slot}`, `${slot}.jpg`);
+            APP_CONFIG.images[slot] = uploaded.url;
+            APP_CONFIG.imageStoragePaths[slot] = uploaded.pathname;
+            uploadedUrls.push(uploaded.url);
+            changed = true;
+          }
+        }
+
+        for (const item of APP_CONFIG.galleryImages || []) {
+          if (item.url?.startsWith('data:image/')) {
+            const uploaded = await uploadImageToVercel(item.url, 'galeria', `${item.id || Date.now()}.jpg`);
+            item.url = uploaded.url;
+            item.storagePath = uploaded.pathname;
+            uploadedUrls.push(uploaded.url);
+            changed = true;
+          }
+        }
+
+        if (!changed) {
+          if (showFeedback) showToast('✓ No quedan fotografías antiguas por migrar.');
+          return true;
+        }
+
+        const saved = await saveToFirebaseCloud(APP_CONFIG);
+        if (!saved) throw new Error('Firebase no pudo guardar los enlaces migrados.');
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
+        populateForm();
+        if (showFeedback) alert('✅ Migración terminada. Las fotografías ya usan Vercel Blob y funcionan entre navegadores.');
+        return true;
+      } catch (error) {
+        APP_CONFIG.images = previousImages;
+        APP_CONFIG.imageStoragePaths = previousPaths;
+        APP_CONFIG.galleryImages = previousGallery;
+        for (const url of uploadedUrls) deleteImageFromVercel(url).catch(() => false);
+        console.error('Error migrando fotografías:', error);
+        if (showFeedback) alert(`❌ No se pudo completar la migración: ${error.message}`);
+        return false;
+      }
+    }
+
     const DEFAULT_CONFIG = {
-      user: 'admin',
-      pin: '7788',
       whatsApp: '51977331267',
       whatsAppDisplay: '+51 977 331 267',
       email: 'leonardochacon181999@hotmail.com',
@@ -1493,6 +1587,7 @@
       heroDesc: 'Instrucción táctica profesional en seguridad preventiva, comando de emergencias, primeros auxilios en combate (TCCC) y respuesta estratégica ante crisis con certificación de alto nivel.',
       aboutMissionTitle: 'PREPARACIÓN ESTRATÉGICA ANTE CUALQUIER ESCENARIO',
       aboutMissionDesc: 'Nuestro enfoque combina metodología teórica rigurosa con simulacros de alta fidelidad bajo estrés controlado. Formamos el criterio preventivo y la respuesta técnica necesaria para salvaguardar vidas y proteger activos críticos.',
+      imageStoragePaths: {},
       c1Title: 'Seguridad y Prevención',
       c1Hours: '40 Horas',
       c1Desc: 'Formación integral en identificación de amenazas, control de accesos táctico, resguardo patrimonial y diseño de protocolos de seguridad física.',
@@ -1635,6 +1730,7 @@
 
     let firebaseApp = null;
     let firestoreDB = null;
+    let firebaseAuth = null;
     let isCloudOnline = false;
 
     try {
@@ -1645,6 +1741,8 @@
           firebaseApp = firebase.app();
         }
         firestoreDB = firebase.firestore();
+        firebaseAuth = firebase.auth();
+        firebaseAuth.useDeviceLanguage();
         isCloudOnline = true;
         console.log('✓ Firebase Cloud Firestore inicializado con éxito.');
       }
@@ -1667,12 +1765,11 @@
           APP_CONFIG = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
         }
 
-        // Intenta sincronizar datos más recientes desde Firebase Cloud
+        // Firebase es la fuente de verdad. El almacenamiento local es solo respaldo temporal.
         if (firestoreDB) {
           try {
-            const cloudDoc = await firestoreDB.collection('happytactical').doc('global_config').get();
-            if (cloudDoc.exists) {
-              const cloudData = cloudDoc.data();
+            const cloudData = await loadFromFirebaseCloud();
+            if (cloudData) {
               console.log('✓ Datos frescos cargados desde Firebase Cloud en Admin');
               APP_CONFIG = { ...DEFAULT_CONFIG, ...cloudData };
               localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG));
@@ -1685,13 +1782,13 @@
         console.error('Error cargando configuración:', e);
       }
 
-      // Load custom images from IndexedDB
+      // Recuperar una imagen local antigua solo si la nube no tiene un valor útil.
       const slots = ['logo', 'hero', 'about', 'c1', 'c2', 'c3'];
       if (!APP_CONFIG.images) APP_CONFIG.images = {};
       for (const slot of slots) {
-        const customSrc = await getImageFromDB(slot);
-        if (customSrc) {
-          APP_CONFIG.images[slot] = customSrc;
+        if (!APP_CONFIG.images[slot] || APP_CONFIG.images[slot].startsWith('HappyTacticalMediaDB:')) {
+          const customSrc = await getImageFromDB(slot);
+          if (customSrc) APP_CONFIG.images[slot] = customSrc;
         }
       }
 
@@ -1750,13 +1847,10 @@
       setVal('cfgC3Hours', APP_CONFIG.c3Hours);
       setVal('cfgC3Desc', APP_CONFIG.c3Desc);
 
-      setVal('cfgAdminUser', APP_CONFIG.user || 'admin');
-      setVal('cfgNewPin', APP_CONFIG.pin || '7788');
-
       const userDisplay = document.getElementById('displayUsername');
-      if (userDisplay) userDisplay.textContent = APP_CONFIG.user || 'admin';
+      if (userDisplay && firebaseAuth?.currentUser) userDisplay.textContent = firebaseAuth.currentUser.displayName || 'Propietario';
       const userLetter = document.getElementById('userAvatarLetter');
-      if (userLetter) userLetter.textContent = (APP_CONFIG.user || 'A').charAt(0).toUpperCase();
+      if (userLetter && firebaseAuth?.currentUser) userLetter.textContent = (firebaseAuth.currentUser.displayName || 'P').charAt(0).toUpperCase();
 
       updateWhatsAppPreview();
       renderScheduleList();
@@ -2043,6 +2137,8 @@
 
     async function confirmSaveAdminGalleryPhoto() {
       const saveBtn = document.getElementById('adminSaveGalleryBtn');
+      let newlyUploadedUrl = '';
+      let previousGallerySnapshot = null;
       if (saveBtn) {
         saveBtn.disabled = true;
         saveBtn.textContent = 'GUARDANDO... ⏳';
@@ -2050,7 +2146,7 @@
 
       try {
         const id = document.getElementById('adminModalGalleryId').value;
-        const url = document.getElementById('adminModalGalleryUrl').value.trim();
+        let url = document.getElementById('adminModalGalleryUrl').value.trim();
         const rawTitle = document.getElementById('adminModalGalleryTitle').value.trim();
         const badge = (document.getElementById('adminModalGalleryBadge').value.trim() || 'TÁCTICO').toUpperCase();
         const location = document.getElementById('adminModalGalleryLocation').value.trim() || 'Lima, Perú';
@@ -2063,15 +2159,28 @@
         }
 
         if (!APP_CONFIG.galleryImages) APP_CONFIG.galleryImages = [...DEFAULT_CONFIG.galleryImages];
+        previousGallerySnapshot = JSON.parse(JSON.stringify(APP_CONFIG.galleryImages));
 
         const title = rawTitle || `Fotografía Operativa #${APP_CONFIG.galleryImages.length + 1}`;
         const photoId = id || ('gal-' + Date.now());
+        const previousItem = id ? APP_CONFIG.galleryImages.find(g => g.id === id) : null;
+        let storagePath = previousItem?.storagePath || '';
+
+        if (url.startsWith('data:')) {
+          if (saveBtn) saveBtn.textContent = 'PUBLICANDO FOTO... ⏳';
+          const uploaded = await uploadImageToVercel(url, 'galeria', `${photoId}.jpg`);
+          url = uploaded.url;
+          storagePath = uploaded.pathname;
+          newlyUploadedUrl = uploaded.url;
+        }
+
         const photoItem = {
           id: photoId,
           title,
           badge,
           location,
           url,
+          storagePath,
           desc: desc || `Registro fotográfico oficial: ${title}`,
           createdAt: new Date().toLocaleDateString('es-PE')
         };
@@ -2087,14 +2196,9 @@
           APP_CONFIG.galleryImages.push(photoItem);
         }
 
-        // 1. Guardar en IndexedDB para persistencia HD
-        let dbSaved = true;
-        if (url.startsWith('data:')) {
-          dbSaved = await saveImageToDB(photoId, url);
-        }
-
-        // 1.5. Guardar en Firebase Cloud Global
+        // Guardar en Firebase únicamente los metadatos y la URL pública.
         let cloudSaved = await saveToFirebaseCloud(APP_CONFIG);
+        if (!cloudSaved) throw new Error('La foto se subió, pero Firebase no pudo publicar su información.');
 
         // 2. Guardar en LocalStorage con blindaje de cuota
         let localSaved = false;
@@ -2137,11 +2241,15 @@
         if (modal) modal.remove();
 
         // 6. Mensaje explícito de estado conforme solicitado
-        if (localSaved || dbSaved) {
+        if (localSaved || cloudSaved) {
           showToast(`✓ FOTO "${title}" GUARDADA Y SINCRONIZADA CONFORME 💾`);
           alert(`✅ ¡GUARDADO CONFORME!
 
-La fotografía "${title}" se guardó y sincronizó correctamente en la Nube Global (Firebase Firestore) y en la base de datos local.`);
+La fotografía "${title}" se publicó en Vercel Blob y ya está sincronizada para todos los navegadores.`);
+
+          if (previousItem?.url && previousItem.url !== url) {
+            deleteImageFromVercel(previousItem.url).catch(() => false);
+          }
         } else {
           showToast(`❌ ERROR AL GUARDAR: ${saveError || 'Falla de almacenamiento'}`);
           alert(`❌ ERROR AL GUARDAR:
@@ -2150,6 +2258,8 @@ No se pudo guardar la fotografía en el almacenamiento local.
 Detalle: ${saveError || 'Error desconocido'}`);
         }
       } catch (errGlobal) {
+        if (previousGallerySnapshot) APP_CONFIG.galleryImages = previousGallerySnapshot;
+        if (newlyUploadedUrl) deleteImageFromVercel(newlyUploadedUrl).catch(() => false);
         console.error('Error global en confirmSaveAdminGalleryPhoto:', errGlobal);
         if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'GUARDAR EN GALERÍA 💾'; }
         alert(`❌ ERROR AL GUARDAR FOTOGRAFÍA:
@@ -2164,16 +2274,14 @@ Revisa la consola para más detalles.`);
       if (!APP_CONFIG.galleryImages) return;
       if (confirm('¿Estás seguro de eliminar esta fotografía de la galería?')) {
         const deleted = APP_CONFIG.galleryImages.splice(idx, 1)[0];
-        if (deleted && deleted.id) {
-          try {
-            const db = await getDB();
-            if (db) {
-              const tx = db.transaction(DB_STORE, 'readwrite');
-              tx.objectStore(DB_STORE).delete(deleted.id);
-            }
-          } catch(e) {}
+        const saved = await saveAllChanges(false);
+        if (!saved) {
+          APP_CONFIG.galleryImages.splice(idx, 0, deleted);
+          await renderGalleryList();
+          showToast('❌ No se pudo eliminar la fotografía.');
+          return;
         }
-        saveAllChanges(false);
+        if (deleted?.url) deleteImageFromVercel(deleted.url).catch(() => false);
         await renderGalleryList();
         updateOverviewStats();
         showToast('✓ Fotografía eliminada');
@@ -2366,9 +2474,12 @@ Revisa la consola para más detalles.`);
         const base64 = await compressImageFile(file, 'video_thumb');
         const thumbInput = document.getElementById('adminModalVideoThumb');
         const prevImg = document.getElementById('adminVideoPreviewImg');
-        if (thumbInput) thumbInput.value = base64;
         if (prevImg) prevImg.src = base64;
-        showToast('✓ Miniatura cargada');
+        showToast('⏳ Publicando miniatura...');
+        const uploaded = await uploadImageToVercel(base64, 'miniaturas-video', file.name);
+        if (thumbInput) thumbInput.value = uploaded.url;
+        if (prevImg) prevImg.src = uploaded.url;
+        showToast('✓ Miniatura publicada');
       } catch(e) {
         showToast('❌ Error al cargar miniatura');
       }
@@ -2453,8 +2564,6 @@ Revisa la consola para más detalles.`);
       // 1. Guardar Config General (Textos, Cursos, Videos, Fechas)
       try {
         const baseConfig = {
-          user: configData.user || 'admin',
-          pin: configData.pin || '7788',
           whatsApp: configData.whatsApp || '51977331267',
           whatsAppDisplay: configData.whatsAppDisplay || '+51 977 331 267',
           phone: configData.phone || '+51 977 331 267',
@@ -2480,6 +2589,11 @@ Revisa la consola para más detalles.`);
           schedule: configData.schedule || [],
           videos: configData.videos || [],
           imageMeta: configData.imageMeta || {},
+          // Elimina cargas antiguas Base64 y credenciales inseguras del documento global.
+          user: firebase.firestore.FieldValue.delete(),
+          pin: firebase.firestore.FieldValue.delete(),
+          images: firebase.firestore.FieldValue.delete(),
+          galleryImages: firebase.firestore.FieldValue.delete(),
           updatedAt: now
         };
         await firestoreDB.collection('happytactical').doc('global_config').set(baseConfig, { merge: true });
@@ -2498,6 +2612,8 @@ Revisa la consola para más detalles.`);
               await firestoreDB.collection('happytactical_slots').doc(slotKey).set({
                 slot: slotKey,
                 data: imgData,
+                url: imgData,
+                storagePath: configData.imageStoragePaths?.[slotKey] || '',
                 updatedAt: now
               });
               console.log(`✓ Foto [${slotKey}] guardada individualmente en Firestore`);
@@ -2518,25 +2634,17 @@ Revisa la consola para más detalles.`);
             title: img.title || '',
             badge: img.badge || 'TÁCTICO',
             location: img.location || 'Happy Tactical',
-            url: img.url && !img.url.startsWith('data:') ? img.url : `cloud_slot:${img.id}`
+            desc: img.desc || '',
+            createdAt: img.createdAt || '',
+            url: img.url || '',
+            storagePath: img.storagePath || ''
           }));
           await firestoreDB.collection('happytactical').doc('global_gallery_meta').set({
             galleryList: galleryMeta,
             updatedAt: now
           }, { merge: true });
 
-          // Guardar cada foto base64 pesada en su propio documento
-          for (const gImg of configData.galleryImages) {
-            if (gImg.url && gImg.url.startsWith('data:')) {
-              await firestoreDB.collection('happytactical_gallery').doc(gImg.id).set({
-                id: gImg.id,
-                title: gImg.title || '',
-                data: gImg.url,
-                updatedAt: now
-              });
-            }
-          }
-          console.log('✓ Galería guardada individualmente en Firestore');
+          console.log('✓ Metadatos de galería guardados en Firestore');
         } catch (errGal) {
           console.error('Error guardando galería:', errGal);
           hasError = true;
@@ -2544,6 +2652,27 @@ Revisa la consola para más detalles.`);
       }
 
       return !hasError;
+    }
+
+    function repairMojibakeData(value) {
+      if (Array.isArray(value)) return value.map(repairMojibakeData);
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, repairMojibakeData(item)]));
+      }
+      if (typeof value === 'string' && /[ÃÂ]/.test(value)) {
+        try {
+          const cp1252 = { '€': 0x80, '‚': 0x82, 'ƒ': 0x83, '„': 0x84, '…': 0x85, '†': 0x86, '‡': 0x87, 'ˆ': 0x88, '‰': 0x89, 'Š': 0x8A, '‹': 0x8B, 'Œ': 0x8C, 'Ž': 0x8E, '‘': 0x91, '’': 0x92, '“': 0x93, '”': 0x94, '•': 0x95, '–': 0x96, '—': 0x97, '˜': 0x98, '™': 0x99, 'š': 0x9A, '›': 0x9B, 'œ': 0x9C, 'ž': 0x9E, 'Ÿ': 0x9F };
+          let repaired = value;
+          for (let pass = 0; pass < 3 && /[ÃÂ]/.test(repaired); pass++) {
+            const bytes = Uint8Array.from(Array.from(repaired, char => cp1252[char] ?? char.charCodeAt(0)));
+            const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+            if (decoded === repaired || decoded.includes('�')) break;
+            repaired = decoded;
+          }
+          return repaired;
+        } catch (_) {}
+      }
+      return value;
     }
 
     async function loadFromFirebaseCloud() {
@@ -2559,8 +2688,11 @@ Revisa la consola para más detalles.`);
         for (const slotKey of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
           try {
             const slotDoc = await firestoreDB.collection('happytactical_slots').doc(slotKey).get();
-            if (slotDoc.exists && slotDoc.data().data) {
-              merged.images[slotKey] = slotDoc.data().data;
+            if (slotDoc.exists && (slotDoc.data().url || slotDoc.data().data)) {
+              const slotData = slotDoc.data();
+              merged.images[slotKey] = slotData.url || slotData.data;
+              if (!merged.imageStoragePaths) merged.imageStoragePaths = {};
+              merged.imageStoragePaths[slotKey] = slotData.storagePath || '';
             }
           } catch(eSlot) {}
         }
@@ -2584,7 +2716,7 @@ Revisa la consola para más detalles.`);
 
         if (Object.keys(merged).length > 0) {
           console.log('✓ Datos globales multi-colección cargados de Firebase Cloud');
-          return merged;
+          return repairMojibakeData(merged);
         }
       } catch (errCloud) {
         console.warn('Error leyendo Firebase Cloud:', errCloud);
@@ -2598,7 +2730,6 @@ Revisa la consola para más detalles.`);
         return el ? el.value.trim() : '';
       };
 
-      APP_CONFIG.user = getVal('cfgAdminUser') || APP_CONFIG.user || 'admin';
       APP_CONFIG.whatsApp = getVal('cfgWhatsApp') || APP_CONFIG.whatsApp;
       APP_CONFIG.whatsAppDisplay = getVal('cfgWhatsAppDisplay') || APP_CONFIG.whatsAppDisplay;
       APP_CONFIG.phone = getVal('cfgPhone') || APP_CONFIG.phone;
@@ -2633,12 +2764,7 @@ Revisa la consola para más detalles.`);
         if (val) APP_CONFIG.images[s] = val;
       }
 
-      const newPin = getVal('cfgNewPin');
-      if (newPin && newPin.length === 4) {
-        APP_CONFIG.pin = newPin;
-      }
-
-      if (showFeedback) showToast('⏳ Sincronizando con Firebase Cloud...');
+      if (showFeedback) showToast('⏳ Sincronizando con la nube...');
 
       // Guardar en la Nube Global de Firebase con AWAIT
       const cloudSuccess = await saveToFirebaseCloud(APP_CONFIG);
@@ -2651,9 +2777,7 @@ Revisa la consola para más detalles.`);
             syncChannel.postMessage({ type: 'gallery_updated' });
           } catch(e) {}
         }
-        const userDisplay = document.getElementById('displayUsername');
-        if (userDisplay) userDisplay.textContent = APP_CONFIG.user;
-        if (showFeedback) { if (cloudSuccess) { showToast('✅ ¡Cambios y fotos sincronizados en Firebase!'); alert('✅ ¡CAMBIOS GUARDADOS EN LA NUBE!\n\nLos textos, cursos y fotografías se guardaron exitosamente en Firebase y ya están visibles en todos tus dispositivos.'); } else { showToast('⚠️ Guardado localmente.'); } }
+        if (showFeedback) { if (cloudSuccess) { showToast('✅ ¡Cambios sincronizados en la nube!'); alert('✅ ¡CAMBIOS GUARDADOS EN LA NUBE!\n\nLos textos, cursos y fotografías ya están visibles en todos tus dispositivos.'); } else { showToast('⚠️ Guardado localmente.'); } }
       } catch (e) {
         // Quota fallback: if localStorage quota exceeded, sanitize heavy base64 strings in localStorage copy while keeping them safe in IndexedDB
         try {
@@ -2677,6 +2801,7 @@ Revisa la consola para más detalles.`);
           if (showFeedback) alert('Error al guardar en almacenamiento local: ' + err2.message);
         }
       }
+      return cloudSuccess;
     }
 
     function restoreFactoryDefaults() {
@@ -2694,39 +2819,61 @@ Revisa la consola para más detalles.`);
     }
 
     // 6. AUTENTICACIÓN
-    function handleAuthSubmit(e) {
+    async function handleAuthSubmit(e) {
       e.preventDefault();
-      const user = document.getElementById('loginUser').value.trim();
-      const pin = document.getElementById('loginPin').value.trim();
       const err = document.getElementById('authErrorMsg');
+      const button = document.getElementById('googleLoginBtn');
+      if (!firebaseAuth) {
+        if (err) { err.textContent = '⚠ FIREBASE AUTH NO ESTÁ DISPONIBLE.'; err.style.display = 'block'; }
+        return;
+      }
 
-      const validUser = APP_CONFIG.user || DEFAULT_CONFIG.user || 'admin';
-      const validPin = APP_CONFIG.pin || DEFAULT_CONFIG.pin || '7788';
-
-      if (user.toLowerCase() === validUser.toLowerCase() && pin === validPin) {
-        sessionStorage.setItem('HT_ADMIN_AUTH', 'true');
-        document.getElementById('authOverlay').classList.add('unlocked');
+      try {
+        if (button) { button.disabled = true; button.textContent = 'VALIDANDO...'; }
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await firebaseAuth.signInWithPopup(provider);
         if (err) err.style.display = 'none';
-        showToast(`¡Bienvenido Operador ${validUser}!`);
-      } else {
-        if (err) err.style.display = 'block';
+      } catch (authError) {
+        console.warn('Inicio de sesión rechazado:', authError.code || authError.message);
+        if (err) { err.textContent = '⚠ NO SE PUDO VALIDAR ESTA CUENTA.'; err.style.display = 'block'; }
+      } finally {
+        if (button) { button.disabled = false; button.textContent = 'INGRESAR CON GOOGLE 🔐'; }
       }
     }
 
     function checkAuth() {
-      if (sessionStorage.getItem('HT_ADMIN_AUTH') === 'true') {
-        document.getElementById('authOverlay').classList.add('unlocked');
-      }
+      if (!firebaseAuth) return;
+      firebaseAuth.onAuthStateChanged(async (user) => {
+        const overlay = document.getElementById('authOverlay');
+        const emailField = document.getElementById('authenticatedEmail');
+        const display = document.getElementById('displayUsername');
+        const avatar = document.getElementById('userAvatarLetter');
+        if (user) {
+          try {
+            const owner = await verifyCurrentAdmin(user);
+            overlay?.classList.add('unlocked');
+            if (emailField) emailField.value = owner.email || 'Cuenta Google autenticada';
+            if (display) display.textContent = owner.displayName || 'Propietario';
+            if (avatar) avatar.textContent = (owner.displayName || owner.email || 'P').charAt(0).toUpperCase();
+            showToast(`¡Bienvenido ${owner.displayName || 'Propietario'}!`);
+          } catch (error) {
+            overlay?.classList.remove('unlocked');
+            console.warn('Validación administrativa rechazada:', error.message);
+            const err = document.getElementById('authErrorMsg');
+            if (err) { err.textContent = `⚠ ${error.message.toUpperCase()}`; err.style.display = 'block'; }
+            await firebaseAuth.signOut();
+          }
+        } else {
+          overlay?.classList.remove('unlocked');
+          if (emailField) emailField.value = 'Esperando autenticación...';
+        }
+      });
     }
 
-    function lockAdmin() {
-      sessionStorage.removeItem('HT_ADMIN_AUTH');
-      document.getElementById('authOverlay').classList.remove('unlocked');
-      const pin = document.getElementById('loginPin');
-      if (pin) {
-        pin.value = '';
-        pin.focus();
-      }
+    async function lockAdmin() {
+      if (firebaseAuth) await firebaseAuth.signOut();
+      document.getElementById('authOverlay')?.classList.remove('unlocked');
     }
 
     // 7. INTERFAZ
@@ -2809,16 +2956,30 @@ Revisa la consola para más detalles.`);
         const base64Data = await compressImageFile(file, slotKey);
         const previewEl = document.getElementById(previewImgId);
         const inputEl = document.getElementById(targetInputId);
+        const previousUrl = APP_CONFIG.images?.[slotKey] || '';
+        const previousStoragePath = APP_CONFIG.imageStoragePaths?.[slotKey] || '';
 
         if (previewEl) previewEl.src = base64Data;
-        if (inputEl) inputEl.value = base64Data;
 
         if (slotKey) {
+          showToast('⏳ Publicando imagen en Vercel Blob...');
+          const uploaded = await uploadImageToVercel(base64Data, `sistema-${slotKey}`, file.name);
+          if (inputEl) inputEl.value = uploaded.url;
           if (!APP_CONFIG.images) APP_CONFIG.images = {};
-          APP_CONFIG.images[slotKey] = base64Data;
-          await saveImageToDB(slotKey, base64Data);
-          saveAllChanges(false);
-          showToast(`✓ Foto de ${slotKey.toUpperCase()} guardada exitosamente.`);
+          if (!APP_CONFIG.imageStoragePaths) APP_CONFIG.imageStoragePaths = {};
+          APP_CONFIG.images[slotKey] = uploaded.url;
+          APP_CONFIG.imageStoragePaths[slotKey] = uploaded.pathname;
+          const cloudSaved = await saveAllChanges(false);
+          if (!cloudSaved) {
+            await deleteImageFromVercel(uploaded.url);
+            APP_CONFIG.images[slotKey] = previousUrl;
+            APP_CONFIG.imageStoragePaths[slotKey] = previousStoragePath;
+            throw new Error('Firebase no pudo publicar el enlace de la nueva imagen.');
+          }
+          if (previousUrl && previousUrl !== uploaded.url) {
+            deleteImageFromVercel(previousUrl).catch(() => false);
+          }
+          showToast(`✓ Foto de ${slotKey.toUpperCase()} publicada para todos los dispositivos.`);
         } else {
           showToast('✓ Foto cargada.');
         }
@@ -2849,13 +3010,12 @@ Revisa la consola para más detalles.`);
       showToast('⏳ Guardando fotos en base de datos...');
       for (const [key, val] of Object.entries(slots)) {
         if (val) {
-          await saveImageToDB(key, val);
           if (!APP_CONFIG.images) APP_CONFIG.images = {};
           APP_CONFIG.images[key] = val;
         }
       }
-      saveAllChanges(false);
-      showToast('✓ Todas las fotos han sido guardadas y sincronizadas.');
+      const saved = await saveAllChanges(false);
+      showToast(saved ? '✓ Todas las fotos han sido publicadas.' : '❌ No se pudieron publicar las fotos.');
     }
 
     // Modal para agregar foto a la galería desde dispositivo o URL

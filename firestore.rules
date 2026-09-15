@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner() {
+      return request.auth != null
+        && request.auth.uid == 'iwNFX2XMC8exhXOFjCnSKOBMGxy2';
+    }
+
+    match /happytactical/{document} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    match /happytactical_slots/{document} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    match /happytactical_gallery/{document} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

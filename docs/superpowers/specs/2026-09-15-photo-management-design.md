@@ -12,16 +12,16 @@ La aplicación combina `localStorage`, IndexedDB y Firestore como fuentes de dat
 
 ### Fuente de verdad
 
-- Firebase Storage almacenará los archivos de imagen.
+- Vercel Blob almacenará los archivos de imagen mediante una función protegida del mismo proyecto Vercel.
 - Firestore almacenará únicamente metadatos: URL pública, ruta del archivo, encuadre, título y fecha de actualización.
 - El sitio público leerá primero Firestore y usará las imágenes incluidas en el repositorio solo como respaldo.
 - `localStorage` e IndexedDB dejarán de decidir qué fotografía está activa. Podrán conservarse temporalmente solo para migración o caché tolerante a fallos.
 
 ### Administración y seguridad
 
-- El panel utilizará Firebase Authentication con correo y contraseña.
+- El panel utilizará Firebase Authentication con acceso de Google.
 - Las reglas permitirán lectura pública de la configuración necesaria para mostrar el sitio.
-- Solo un usuario autenticado y autorizado podrá modificar Firestore o subir y eliminar archivos en Storage.
+- Solo la cuenta propietaria autenticada podrá modificar Firestore o subir y eliminar archivos en Vercel Blob.
 - El PIN y las credenciales administrativas dejarán de almacenarse en el código, `localStorage` y Firestore.
 - Las credenciales privadas nunca se incorporarán al repositorio.
 
@@ -29,7 +29,7 @@ La aplicación combina `localStorage`, IndexedDB y Firestore como fuentes de dat
 
 1. El propietario inicia sesión en el Centro de Mando.
 2. Selecciona una fotografía y ve una previsualización local.
-3. Al guardar, el panel comprime la imagen a un formato web razonable y la sube a Firebase Storage.
+3. Al guardar, el panel comprime la imagen a un formato web razonable y la sube a Vercel Blob.
 4. Cuando la subida termina, actualiza en Firestore la URL y los metadatos del espacio correspondiente.
 5. El panel muestra confirmación solo después de que ambos pasos hayan terminado correctamente.
 6. Las páginas abiertas reciben el cambio mediante el listener de Firestore; las nuevas visitas descargan el mismo estado global.
@@ -53,8 +53,8 @@ La mejora estética general del sitio queda fuera de esta fase y se abordará de
 
 Cada espacio fijo tendrá un documento con:
 
-- `url`: dirección de descarga de Firebase Storage.
-- `storagePath`: ruta estable del archivo para poder reemplazarlo o eliminarlo.
+- `url`: dirección pública de descarga de Vercel Blob.
+- `storagePath`: ruta del archivo en Vercel Blob para poder reemplazarlo o eliminarlo.
 - `fit`, `position` y `scale`: encuadre visual.
 - `updatedAt`: marca de tiempo del servidor.
 
@@ -71,7 +71,7 @@ Cada elemento de galería tendrá identificador, título, categoría, ubicación
 ## Migración
 
 - Se conservarán las rutas locales actuales como respaldo.
-- Las imágenes Base64 existentes que todavía sean recuperables se subirán una sola vez a Storage.
+- Las imágenes Base64 existentes que todavía sean recuperables se subirán una sola vez a Vercel Blob.
 - Después de verificar las nuevas URL, se eliminarán de los documentos activos los campos Base64 obsoletos.
 - No se borrará contenido remoto anterior hasta comprobar que la web pública muestra correctamente las nuevas imágenes.
 

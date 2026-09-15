@@ -3860,7 +3860,6 @@
     };
 
     const DEFAULT_CONFIG = {
-      pin: '7788',
       whatsApp: '51977331267',
       whatsAppDisplay: '+51 977 331 267',
       email: 'leonardochacon181999@hotmail.com',
@@ -4263,6 +4262,27 @@
 
     // --- Hydration & Synchronization ---
     
+    function repairMojibakeData(value) {
+      if (Array.isArray(value)) return value.map(repairMojibakeData);
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, repairMojibakeData(item)]));
+      }
+      if (typeof value === 'string' && /[ÃÂ]/.test(value)) {
+        try {
+          const cp1252 = { '€': 0x80, '‚': 0x82, 'ƒ': 0x83, '„': 0x84, '…': 0x85, '†': 0x86, '‡': 0x87, 'ˆ': 0x88, '‰': 0x89, 'Š': 0x8A, '‹': 0x8B, 'Œ': 0x8C, 'Ž': 0x8E, '‘': 0x91, '’': 0x92, '“': 0x93, '”': 0x94, '•': 0x95, '–': 0x96, '—': 0x97, '˜': 0x98, '™': 0x99, 'š': 0x9A, '›': 0x9B, 'œ': 0x9C, 'ž': 0x9E, 'Ÿ': 0x9F };
+          let repaired = value;
+          for (let pass = 0; pass < 3 && /[ÃÂ]/.test(repaired); pass++) {
+            const bytes = Uint8Array.from(Array.from(repaired, char => cp1252[char] ?? char.charCodeAt(0)));
+            const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+            if (decoded === repaired || decoded.includes('�')) break;
+            repaired = decoded;
+          }
+          return repaired;
+        } catch (_) {}
+      }
+      return value;
+    }
+
     // --- Escucha en Tiempo Real Multi-Colección desde Firebase Cloud Firestore ---
     function initFirebaseRealtimeSync() {
       if (!firestoreDB) return;
@@ -4271,7 +4291,7 @@
         firestoreDB.collection('happytactical').doc('global_config')
           .onSnapshot((doc) => {
             if (doc.exists) {
-              const cloudData = doc.data();
+              const cloudData = repairMojibakeData(doc.data());
               console.log('⚡ Sincronización [global_config] recibida');
               HT_CONFIG = Object.assign({}, DEFAULT_CONFIG, HT_CONFIG, cloudData);
               if (cloudData.videos && Array.isArray(cloudData.videos)) HT_CONFIG.videos = cloudData.videos;
@@ -4286,8 +4306,8 @@
         for (const slotKey of ['logo', 'hero', 'about', 'c1', 'c2', 'c3']) {
           firestoreDB.collection('happytactical_slots').doc(slotKey)
             .onSnapshot((doc) => {
-              if (doc.exists && doc.data().data) {
-                const src = doc.data().data;
+              if (doc.exists && (doc.data().url || doc.data().data)) {
+                const src = doc.data().url || doc.data().data;
                 console.log(`⚡ Sincronización foto [${slotKey}] recibida`);
                 if (!HT_CONFIG.images) HT_CONFIG.images = {};
                 HT_CONFIG.images[slotKey] = src;
@@ -4358,7 +4378,7 @@
             for (const [k, v] of Object.entries(jsonCfg.fields)) {
               parsed[k] = parseFirestoreValue(v);
             }
-            HT_CONFIG = Object.assign({}, DEFAULT_CONFIG, parsed);
+            HT_CONFIG = Object.assign({}, DEFAULT_CONFIG, repairMojibakeData(parsed));
             if (parsed.videos && Array.isArray(parsed.videos)) HT_CONFIG.videos = parsed.videos;
             if (parsed.schedule && Array.isArray(parsed.schedule)) HT_CONFIG.schedule = parsed.schedule;
             console.log('⚡ [REST Cloud] Textos y configuración global hidratados');
@@ -4374,8 +4394,8 @@
             const resSlot = await fetch(`${BASE_URL}/happytactical_slots/${slotKey}?ts=${Date.now()}`);
             if (resSlot.ok) {
               const jsonSlot = await resSlot.json();
-              if (jsonSlot.fields && jsonSlot.fields.data) {
-                const src = parseFirestoreValue(jsonSlot.fields.data);
+              if (jsonSlot.fields && (jsonSlot.fields.url || jsonSlot.fields.data)) {
+                const src = parseFirestoreValue(jsonSlot.fields.url || jsonSlot.fields.data);
                 if (src) {
                   HT_CONFIG.images[slotKey] = src;
                   HT_ACTIVE_IMAGES[slotKey] = src;
