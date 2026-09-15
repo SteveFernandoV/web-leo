@@ -23,14 +23,17 @@ export async function requireAdmin(req) {
 
   const payload = await response.json();
   const user = payload.users?.[0];
-  const configuredEmail = (process.env.FIREBASE_ADMIN_EMAIL || '').trim().toLowerCase();
+  const configuredEmails = (process.env.FIREBASE_ADMIN_EMAIL || '')
+    .split(/[\n,;]+/)
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean);
   const userEmail = (user?.email || '').trim().toLowerCase();
 
-  if (!configuredEmail) {
+  if (!configuredEmails.length) {
     return { ok: false, status: 503, message: 'El administrador todavía no está configurado en Vercel.' };
   }
 
-  if (!user || !userEmail || userEmail !== configuredEmail) {
+  if (!user || !userEmail || !configuredEmails.includes(userEmail)) {
     return { ok: false, status: 403, message: 'Esta cuenta no tiene permisos de propietario.' };
   }
 

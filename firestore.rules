@@ -4,7 +4,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function isOwner() {
       return request.auth != null
-        && request.auth.uid == 'iwNFX2XMC8exhXOFjCnSKOBMGxy2';
+        && (
+          request.auth.uid == 'iwNFX2XMC8exhXOFjCnSKOBMGxy2'
+          || request.auth.token.email == 'fantasma141130@gmail.com'
+        );
     }
 
     match /happytactical/{document} {
