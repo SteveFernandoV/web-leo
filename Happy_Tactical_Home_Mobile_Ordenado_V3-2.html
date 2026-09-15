@@ -4953,7 +4953,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
       const track2 = document.getElementById('galleryTrack2');
       if (!track1 || !track2) return;
 
-      const imgList = (HT_CONFIG.galleryImages && Array.isArray(HT_CONFIG.galleryImages) && HT_CONFIG.galleryImages.length > 0)
+      const imgList = Array.isArray(HT_CONFIG.galleryImages)
         ? HT_CONFIG.galleryImages
         : DEFAULT_CONFIG.galleryImages;
 
@@ -5023,7 +5023,7 @@ Contacto Oficial Happy Tactical: ${HT_CONFIG.phone} / WhatsApp: ${HT_CONFIG.what
     }
 
     async function openTacticalLightbox(imgId) {
-      const imgList = (HT_CONFIG.galleryImages && Array.isArray(HT_CONFIG.galleryImages) && HT_CONFIG.galleryImages.length > 0)
+      const imgList = Array.isArray(HT_CONFIG.galleryImages)
         ? HT_CONFIG.galleryImages
         : DEFAULT_CONFIG.galleryImages;
 

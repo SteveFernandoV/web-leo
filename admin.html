@@ -2276,7 +2276,12 @@ Revisa la consola para más detalles.`);
       if (!APP_CONFIG.galleryImages) return;
       if (confirm('¿Estás seguro de eliminar esta fotografía de la galería?')) {
         const deleted = APP_CONFIG.galleryImages.splice(idx, 1)[0];
-        const saved = await saveAllChanges(false);
+        // La galería tiene su propio documento; no depender del guardado
+        // global para que eliminar una foto sea fiable.
+        const saved = await saveGalleryMetaToFirebase(APP_CONFIG.galleryImages);
+        if (saved) {
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(APP_CONFIG)); } catch (e) {}
+        }
         if (!saved) {
           APP_CONFIG.galleryImages.splice(idx, 0, deleted);
           await renderGalleryList();
